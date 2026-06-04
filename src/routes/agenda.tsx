@@ -72,8 +72,8 @@ function AgendaPage() {
             {slots.map((hora, idx) => {
               const isLastBeforeLunch = hora === "11:30";
               return (
-                <>
-                  <tr key={hora} className="hover:bg-accent/20">
+                <Fragment key={hora}>
+                  <tr className="hover:bg-accent/20">
                     <td className="p-2 border-b border-r font-semibold text-muted-foreground align-top">{hora}</td>
                     {terapeutas.map((t) => {
                       const at = atendimentos.find((a) => a.hora === hora && a.terapeutaId === t.id);
