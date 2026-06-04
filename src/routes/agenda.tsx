@@ -117,7 +117,7 @@ function AgendaPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
