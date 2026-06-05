@@ -1,4 +1,4 @@
-import type { Funcionario, Paciente, Atendimento, Usuario, LogEntry, Especialidade } from "@/types";
+import type { Funcionario, Paciente, Atendimento, Presenca, Usuario, LogEntry, Especialidade } from "@/types";
 
 export const especialidades: Especialidade[] = [
   "Psicologia",
@@ -120,116 +120,72 @@ export const funcionarios: Funcionario[] = [
 ];
 
 export const pacientes: Paciente[] = [
-  {
-    id: "p1",
-    nome: "Lucas Henrique Silva",
-    dataNascimento: "2016-03-15",
-    endereco: "Rua das Hortências, 88",
-    telefone: "(11) 98888-1111",
-    convenio: "Unimed",
-    terapias: ["Psicologia", "Fonoaudiologia"],
-    responsavel: "Marina Silva",
-    documentos: [],
-  },
-  {
-    id: "p2",
-    nome: "Helena Castro Ribeiro",
-    dataNascimento: "2014-09-02",
-    endereco: "Av. Central, 1500",
-    telefone: "(11) 98888-2222",
-    convenio: "Bradesco Saúde",
-    terapias: ["Terapia Ocupacional", "Psicomotricidade"],
-    responsavel: "Júlia Ribeiro",
-    documentos: [],
-  },
-  {
-    id: "p3",
-    nome: "Pedro Augusto Martins",
-    dataNascimento: "2017-12-21",
-    endereco: "Rua Azul, 33",
-    telefone: "(11) 98888-3333",
-    convenio: "Particular",
-    terapias: ["Fonoaudiologia"],
-    responsavel: "Roberta Martins",
-    documentos: [],
-  },
-  {
-    id: "p4",
-    nome: "Sofia Mendes",
-    dataNascimento: "2015-05-10",
-    endereco: "Rua das Rosas, 5",
-    telefone: "(11) 98888-4444",
-    convenio: "Amil",
-    terapias: ["Psicologia", "Psicopedagogia", "Musicoterapia"],
-    responsavel: "Carla Mendes",
-    documentos: [],
-  },
-  {
-    id: "p5",
-    nome: "Gabriel Souza Lima",
-    dataNascimento: "2013-02-28",
-    endereco: "Rua Tulipa, 102",
-    telefone: "(11) 98888-5555",
-    convenio: "SulAmérica",
-    terapias: ["Fisioterapia"],
-    responsavel: "Fernando Lima",
-    documentos: [],
-  },
-  {
-    id: "p6",
-    nome: "Isabela Rocha",
-    dataNascimento: "2018-08-14",
-    endereco: "Rua Margaridas, 9",
-    telefone: "(11) 98888-6666",
-    convenio: "Unimed",
-    terapias: ["Psicomotricidade", "Terapia Ocupacional"],
-    responsavel: "Mariana Rocha",
-    documentos: [],
-  },
-  {
-    id: "p7",
-    nome: "Theo Almeida",
-    dataNascimento: "2019-11-03",
-    endereco: "Rua Lírio, 17",
-    telefone: "(11) 98888-7777",
-    convenio: "Particular",
-    terapias: ["Fonoaudiologia", "Musicoterapia"],
-    responsavel: "Bruna Almeida",
-    documentos: [],
-  },
-  {
-    id: "p8",
-    nome: "Valentina Cardoso",
-    dataNascimento: "2016-06-25",
-    endereco: "Av. Liberdade, 770",
-    telefone: "(11) 98888-8888",
-    convenio: "Hapvida",
-    terapias: ["Psicologia"],
-    responsavel: "Sergio Cardoso",
-    documentos: [],
-  },
+  { id: "p1", nome: "Lucas Henrique Silva", dataNascimento: "2016-03-15", endereco: "Rua das Hortências, 88", telefone: "(11) 98888-1111", convenio: "Unimed", terapias: ["Psicologia", "Fonoaudiologia"], responsavel: "Marina Silva", documentos: [] },
+  { id: "p2", nome: "Helena Castro Ribeiro", dataNascimento: "2014-09-02", endereco: "Av. Central, 1500", telefone: "(11) 98888-2222", convenio: "Bradesco Saúde", terapias: ["Terapia Ocupacional", "Psicomotricidade"], responsavel: "Júlia Ribeiro", documentos: [] },
+  { id: "p3", nome: "Pedro Augusto Martins", dataNascimento: "2017-12-21", endereco: "Rua Azul, 33", telefone: "(11) 98888-3333", convenio: "Particular", terapias: ["Fonoaudiologia"], responsavel: "Roberta Martins", documentos: [] },
+  { id: "p4", nome: "Sofia Mendes", dataNascimento: "2015-05-10", endereco: "Rua das Rosas, 5", telefone: "(11) 98888-4444", convenio: "Amil", terapias: ["Psicologia", "Psicopedagogia", "Musicoterapia"], responsavel: "Carla Mendes", documentos: [] },
+  { id: "p5", nome: "Gabriel Souza Lima", dataNascimento: "2013-02-28", endereco: "Rua Tulipa, 102", telefone: "(11) 98888-5555", convenio: "SulAmérica", terapias: ["Fisioterapia"], responsavel: "Fernando Lima", documentos: [] },
+  { id: "p6", nome: "Isabela Rocha", dataNascimento: "2018-08-14", endereco: "Rua Margaridas, 9", telefone: "(11) 98888-6666", convenio: "Unimed", terapias: ["Psicomotricidade", "Terapia Ocupacional"], responsavel: "Mariana Rocha", documentos: [] },
+  { id: "p7", nome: "Theo Almeida", dataNascimento: "2019-11-03", endereco: "Rua Lírio, 17", telefone: "(11) 98888-7777", convenio: "Particular", terapias: ["Fonoaudiologia", "Musicoterapia"], responsavel: "Bruna Almeida", documentos: [] },
+  { id: "p8", nome: "Valentina Cardoso", dataNascimento: "2016-06-25", endereco: "Av. Liberdade, 770", telefone: "(11) 98888-8888", convenio: "Hapvida", terapias: ["Psicologia"], responsavel: "Sergio Cardoso", documentos: [] },
 ];
 
-// Hoje
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
-
+// Grade fixa semanal: o que está aqui acontece toda semana naquele dia.
 export const atendimentos: Atendimento[] = [
-  { id: "a1", data: todayISO(), hora: "08:00", pacienteId: "p1", terapeutaId: "f1", terapia: "Psicologia", status: "concluido" },
-  { id: "a2", data: todayISO(), hora: "08:30", pacienteId: "p4", terapeutaId: "f1", terapia: "Psicologia", status: "presente" },
-  { id: "a3", data: todayISO(), hora: "09:00", pacienteId: "p3", terapeutaId: "f3", terapia: "Fonoaudiologia", status: "presente" },
-  { id: "a4", data: todayISO(), hora: "09:30", pacienteId: "p2", terapeutaId: "f4", terapia: "Terapia Ocupacional", status: "agendado" },
-  { id: "a5", data: todayISO(), hora: "10:00", pacienteId: "p5", terapeutaId: "f2", terapia: "Fisioterapia", status: "agendado" },
-  { id: "a6", data: todayISO(), hora: "10:30", pacienteId: "p6", terapeutaId: "f4", terapia: "Terapia Ocupacional", status: "faltou" },
-  { id: "a7", data: todayISO(), hora: "13:00", pacienteId: "p7", terapeutaId: "f3", terapia: "Fonoaudiologia", status: "agendado" },
-  { id: "a8", data: todayISO(), hora: "13:30", pacienteId: "p8", terapeutaId: "f1", terapia: "Psicologia", status: "agendado" },
-  { id: "a9", data: todayISO(), hora: "14:00", pacienteId: "p1", terapeutaId: "f3", terapia: "Fonoaudiologia", status: "concluido" },
-  { id: "a10", data: todayISO(), hora: "14:30", pacienteId: "p4", terapeutaId: "f5", terapia: "Psicopedagogia", status: "agendado" },
-  { id: "a11", data: todayISO(), hora: "15:00", pacienteId: "p2", terapeutaId: "f4", terapia: "Psicomotricidade", status: "agendado" },
-  { id: "a12", data: todayISO(), hora: "15:30", pacienteId: "p5", terapeutaId: "f2", terapia: "Fisioterapia", status: "agendado" },
-  { id: "a13", data: todayISO(), hora: "16:00", pacienteId: "p7", terapeutaId: "f5", terapia: "Musicoterapia", status: "agendado" },
+  // Segunda
+  { id: "a-seg-1", diaSemana: "seg", hora: "08:00", pacienteId: "p1", terapeutaId: "f1", terapia: "Psicologia" },
+  { id: "a-seg-2", diaSemana: "seg", hora: "08:30", pacienteId: "p4", terapeutaId: "f1", terapia: "Psicologia" },
+  { id: "a-seg-3", diaSemana: "seg", hora: "09:00", pacienteId: "p3", terapeutaId: "f3", terapia: "Fonoaudiologia" },
+  { id: "a-seg-4", diaSemana: "seg", hora: "09:30", pacienteId: "p2", terapeutaId: "f4", terapia: "Terapia Ocupacional" },
+  { id: "a-seg-5", diaSemana: "seg", hora: "10:00", pacienteId: "p5", terapeutaId: "f2", terapia: "Fisioterapia" },
+  { id: "a-seg-6", diaSemana: "seg", hora: "10:30", pacienteId: "p6", terapeutaId: "f4", terapia: "Terapia Ocupacional" },
+  { id: "a-seg-7", diaSemana: "seg", hora: "13:30", pacienteId: "p8", terapeutaId: "f1", terapia: "Psicologia" },
+  { id: "a-seg-8", diaSemana: "seg", hora: "14:00", pacienteId: "p1", terapeutaId: "f3", terapia: "Fonoaudiologia" },
+  { id: "a-seg-9", diaSemana: "seg", hora: "14:30", pacienteId: "p4", terapeutaId: "f5", terapia: "Psicopedagogia" },
+  { id: "a-seg-10", diaSemana: "seg", hora: "15:00", pacienteId: "p2", terapeutaId: "f4", terapia: "Psicomotricidade" },
+
+  // Terça
+  { id: "a-ter-1", diaSemana: "ter", hora: "08:00", pacienteId: "p7", terapeutaId: "f3", terapia: "Fonoaudiologia" },
+  { id: "a-ter-2", diaSemana: "ter", hora: "08:30", pacienteId: "p5", terapeutaId: "f2", terapia: "Fisioterapia" },
+  { id: "a-ter-3", diaSemana: "ter", hora: "09:00", pacienteId: "p8", terapeutaId: "f1", terapia: "Psicologia" },
+  { id: "a-ter-4", diaSemana: "ter", hora: "09:30", pacienteId: "p6", terapeutaId: "f4", terapia: "Psicomotricidade" },
+  { id: "a-ter-5", diaSemana: "ter", hora: "10:00", pacienteId: "p1", terapeutaId: "f1", terapia: "Psicologia" },
+  { id: "a-ter-6", diaSemana: "ter", hora: "13:30", pacienteId: "p3", terapeutaId: "f3", terapia: "Fonoaudiologia" },
+  { id: "a-ter-7", diaSemana: "ter", hora: "14:00", pacienteId: "p4", terapeutaId: "f5", terapia: "Musicoterapia" },
+  { id: "a-ter-8", diaSemana: "ter", hora: "15:00", pacienteId: "p2", terapeutaId: "f4", terapia: "Terapia Ocupacional" },
+
+  // Quarta
+  { id: "a-qua-1", diaSemana: "qua", hora: "08:00", pacienteId: "p4", terapeutaId: "f1", terapia: "Psicologia" },
+  { id: "a-qua-2", diaSemana: "qua", hora: "08:30", pacienteId: "p7", terapeutaId: "f3", terapia: "Musicoterapia" },
+  { id: "a-qua-3", diaSemana: "qua", hora: "09:00", pacienteId: "p5", terapeutaId: "f2", terapia: "Fisioterapia" },
+  { id: "a-qua-4", diaSemana: "qua", hora: "09:30", pacienteId: "p1", terapeutaId: "f3", terapia: "Fonoaudiologia" },
+  { id: "a-qua-5", diaSemana: "qua", hora: "10:00", pacienteId: "p6", terapeutaId: "f4", terapia: "Terapia Ocupacional" },
+  { id: "a-qua-6", diaSemana: "qua", hora: "13:30", pacienteId: "p4", terapeutaId: "f5", terapia: "Psicopedagogia" },
+  { id: "a-qua-7", diaSemana: "qua", hora: "14:00", pacienteId: "p8", terapeutaId: "f1", terapia: "Psicologia" },
+  { id: "a-qua-8", diaSemana: "qua", hora: "15:00", pacienteId: "p2", terapeutaId: "f4", terapia: "Psicomotricidade" },
+
+  // Quinta
+  { id: "a-qui-1", diaSemana: "qui", hora: "08:00", pacienteId: "p1", terapeutaId: "f1", terapia: "Psicologia" },
+  { id: "a-qui-2", diaSemana: "qui", hora: "08:30", pacienteId: "p3", terapeutaId: "f3", terapia: "Fonoaudiologia" },
+  { id: "a-qui-3", diaSemana: "qui", hora: "09:00", pacienteId: "p5", terapeutaId: "f2", terapia: "Fisioterapia" },
+  { id: "a-qui-4", diaSemana: "qui", hora: "09:30", pacienteId: "p6", terapeutaId: "f4", terapia: "Psicomotricidade" },
+  { id: "a-qui-5", diaSemana: "qui", hora: "10:00", pacienteId: "p7", terapeutaId: "f3", terapia: "Fonoaudiologia" },
+  { id: "a-qui-6", diaSemana: "qui", hora: "13:30", pacienteId: "p4", terapeutaId: "f5", terapia: "Psicopedagogia" },
+  { id: "a-qui-7", diaSemana: "qui", hora: "14:00", pacienteId: "p2", terapeutaId: "f4", terapia: "Terapia Ocupacional" },
+  { id: "a-qui-8", diaSemana: "qui", hora: "15:00", pacienteId: "p8", terapeutaId: "f1", terapia: "Psicologia" },
+
+  // Sexta
+  { id: "a-sex-1", diaSemana: "sex", hora: "08:00", pacienteId: "p4", terapeutaId: "f1", terapia: "Psicologia" },
+  { id: "a-sex-2", diaSemana: "sex", hora: "08:30", pacienteId: "p1", terapeutaId: "f3", terapia: "Fonoaudiologia" },
+  { id: "a-sex-3", diaSemana: "sex", hora: "09:00", pacienteId: "p5", terapeutaId: "f2", terapia: "Fisioterapia" },
+  { id: "a-sex-4", diaSemana: "sex", hora: "09:30", pacienteId: "p2", terapeutaId: "f4", terapia: "Terapia Ocupacional" },
+  { id: "a-sex-5", diaSemana: "sex", hora: "10:00", pacienteId: "p7", terapeutaId: "f3", terapia: "Musicoterapia" },
+  { id: "a-sex-6", diaSemana: "sex", hora: "13:30", pacienteId: "p6", terapeutaId: "f4", terapia: "Psicomotricidade" },
+  { id: "a-sex-7", diaSemana: "sex", hora: "14:00", pacienteId: "p4", terapeutaId: "f5", terapia: "Musicoterapia" },
+  { id: "a-sex-8", diaSemana: "sex", hora: "15:00", pacienteId: "p8", terapeutaId: "f1", terapia: "Psicologia" },
 ];
+
+export const presencas: Presenca[] = [];
 
 export const usuarios: Usuario[] = [
   { id: "u1", nome: "Carlos Diretor", usuario: "diretor", perfil: "diretor", ativo: true },

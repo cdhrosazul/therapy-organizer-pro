@@ -1,7 +1,6 @@
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
 import {
   listAtendimentos,
   listFuncionarios,
@@ -9,8 +8,8 @@ import {
   saveAtendimento,
   removeAtendimento,
 } from "@/services";
-import type { Atendimento, Especialidade } from "@/types";
-import { hojeISO, slotsHorarios } from "@/lib/format";
+import type { Atendimento, DiaSemana, Especialidade } from "@/types";
+import { slotsHorarios, DIAS_SEMANA, diaSemanaHoje } from "@/lib/format";
 import { PageHeader } from "@/components/layout/AppShell";
 import { useAuth } from "@/lib/auth";
 import { podeEditarAgenda } from "@/lib/permissions";
@@ -25,10 +24,10 @@ export const Route = createFileRoute("/agenda")({
 function AgendaPage() {
   const { session } = useAuth();
   const podeEditar = session ? podeEditarAgenda(session.perfil) : false;
-  const [data, setData] = useState(hojeISO());
+  const [diaSemana, setDiaSemana] = useState<DiaSemana>(diaSemanaHoje());
   const qc = useQueryClient();
 
-  const atQuery = useQuery({ queryKey: ["atendimentos", data], queryFn: () => listAtendimentos({ data }) });
+  const atQuery = useQuery({ queryKey: ["atendimentos", diaSemana], queryFn: () => listAtendimentos({ diaSemana }) });
   const funcQuery = useQuery({ queryKey: ["funcionarios"], queryFn: listFuncionarios });
   const pacQuery = useQuery({ queryKey: ["pacientes"], queryFn: listPacientes });
 
@@ -37,23 +36,28 @@ function AgendaPage() {
   const pacMap = new Map((pacQuery.data ?? []).map((p) => [p.id, p]));
 
   const slots = slotsHorarios();
-
   const [modal, setModal] = useState<{ hora: string; terapeutaId: string; editar?: Atendimento } | null>(null);
 
   return (
     <div>
       <PageHeader
         title="Agenda"
-        description="Grade de atendimentos. Slots de 30 min · 08:00–12:00 · 13:00–17:00"
-        actions={
-          <input
-            type="date"
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-            className="h-10 rounded-md border bg-card px-3 text-sm"
-          />
-        }
+        description="Grade fixa semanal · o que for marcado aqui se repete todas as semanas"
       />
+
+      <div className="mb-4 inline-flex rounded-xl border bg-card p-1">
+        {DIAS_SEMANA.map((d) => (
+          <button
+            key={d.value}
+            onClick={() => setDiaSemana(d.value)}
+            className={`px-4 h-9 rounded-lg text-sm font-medium transition-colors ${
+              diaSemana === d.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            {d.labelCurto}
+          </button>
+        ))}
+      </div>
 
       <div className="rounded-2xl border bg-card overflow-auto">
         <table className="w-full text-sm border-collapse">
@@ -69,7 +73,7 @@ function AgendaPage() {
             </tr>
           </thead>
           <tbody>
-            {slots.map((hora, idx) => {
+            {slots.map((hora) => {
               const isLastBeforeLunch = hora === "11:30";
               return (
                 <Fragment key={hora}>
@@ -79,13 +83,7 @@ function AgendaPage() {
                       const at = atendimentos.find((a) => a.hora === hora && a.terapeutaId === t.id);
                       const pac = at ? pacMap.get(at.pacienteId) : undefined;
                       const toneBg = at
-                        ? at.status === "presente"
-                          ? "bg-success/10 border-success/30"
-                          : at.status === "concluido"
-                          ? "bg-info/10 border-info/30"
-                          : at.status === "faltou"
-                          ? "bg-destructive/10 border-destructive/30"
-                          : "bg-primary-soft border-primary/20"
+                        ? "bg-primary-soft border-primary/20"
                         : "bg-card hover:bg-accent/30";
                       return (
                         <td key={t.id} className="p-1 border-b align-top">
@@ -126,7 +124,7 @@ function AgendaPage() {
 
       {modal && (
         <AppointmentModal
-          data={data}
+          diaSemana={diaSemana}
           hora={modal.hora}
           terapeutaId={modal.terapeutaId}
           editar={modal.editar}
@@ -134,7 +132,7 @@ function AgendaPage() {
           podeEditar={podeEditar}
           onClose={() => setModal(null)}
           onSaved={async () => {
-            await qc.invalidateQueries({ queryKey: ["atendimentos", data] });
+            await qc.invalidateQueries({ queryKey: ["atendimentos", diaSemana] });
             setModal(null);
           }}
         />
@@ -144,7 +142,7 @@ function AgendaPage() {
 }
 
 function AppointmentModal({
-  data,
+  diaSemana,
   hora,
   terapeutaId,
   editar,
@@ -153,7 +151,7 @@ function AppointmentModal({
   onClose,
   onSaved,
 }: {
-  data: string;
+  diaSemana: DiaSemana;
   hora: string;
   terapeutaId: string;
   editar?: Atendimento;
@@ -164,17 +162,17 @@ function AppointmentModal({
 }) {
   const [pacienteId, setPacienteId] = useState(editar?.pacienteId ?? "");
   const [terapia, setTerapia] = useState<Especialidade>(editar?.terapia ?? especialidades[0]);
+  const diaLabel = DIAS_SEMANA.find((d) => d.value === diaSemana)?.label ?? "";
 
   async function handleSave() {
     if (!pacienteId) return;
     await saveAtendimento({
       id: editar?.id ?? "",
-      data,
+      diaSemana,
       hora,
       pacienteId,
       terapeutaId,
       terapia,
-      status: editar?.status ?? "agendado",
     });
     onSaved();
   }
@@ -189,8 +187,8 @@ function AppointmentModal({
       <div className="bg-card rounded-2xl border w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <div>
-            <h3 className="font-semibold">{editar ? "Editar atendimento" : "Novo atendimento"}</h3>
-            <p className="text-xs text-muted-foreground">{data} · {hora}</p>
+            <h3 className="font-semibold">{editar ? "Editar slot fixo" : "Novo slot fixo"}</h3>
+            <p className="text-xs text-muted-foreground">Toda {diaLabel.toLowerCase()} · {hora}</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-md hover:bg-accent"><X className="size-4" /></button>
         </div>
@@ -220,6 +218,9 @@ function AppointmentModal({
               {especialidades.map((e) => <option key={e} value={e}>{e}</option>)}
             </select>
           </div>
+          <p className="text-xs text-muted-foreground bg-muted/40 rounded-md p-2">
+            Este horário ficará reservado para o paciente toda semana neste dia.
+          </p>
         </div>
         <div className="flex items-center justify-between gap-2 px-5 py-4 border-t bg-muted/30 rounded-b-2xl">
           {editar && podeEditar ? (

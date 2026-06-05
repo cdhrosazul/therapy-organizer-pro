@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { listAtendimentos, listPacientes, listFuncionarios } from "@/services";
-import { hojeISO } from "@/lib/format";
+import { listAtendimentos, listPacientes, listFuncionarios, listPresencas } from "@/services";
+import { hojeISO, diaSemanaHoje, DIAS_SEMANA } from "@/lib/format";
 import { PageHeader } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
+import type { StatusPresenca } from "@/types";
 import { CalendarDays, CheckCircle2, UserCheck, UserX, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
@@ -13,18 +14,25 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const data = hojeISO();
-  const atQuery = useQuery({ queryKey: ["atendimentos", data], queryFn: () => listAtendimentos({ data }) });
+  const dia = diaSemanaHoje();
+  const diaLabel = DIAS_SEMANA.find((d) => d.value === dia)?.label ?? "";
+  const atQuery = useQuery({ queryKey: ["atendimentos", dia], queryFn: () => listAtendimentos({ diaSemana: dia }) });
   const pacQuery = useQuery({ queryKey: ["pacientes"], queryFn: listPacientes });
   const funcQuery = useQuery({ queryKey: ["funcionarios"], queryFn: listFuncionarios });
+  const presQuery = useQuery({ queryKey: ["presencas", data], queryFn: () => listPresencas({ data }) });
 
   const atendimentos = atQuery.data ?? [];
   const pacientesMap = new Map((pacQuery.data ?? []).map((p) => [p.id, p]));
   const funcMap = new Map((funcQuery.data ?? []).map((f) => [f.id, f]));
+  const presMap = new Map((presQuery.data ?? []).map((p) => [p.atendimentoId, p.status as StatusPresenca]));
 
   const totalDia = atendimentos.length;
-  const presentes = atendimentos.filter((a) => a.status === "presente" || a.status === "concluido").length;
-  const concluidos = atendimentos.filter((a) => a.status === "concluido").length;
-  const faltas = atendimentos.filter((a) => a.status === "faltou").length;
+  const presentes = atendimentos.filter((a) => {
+    const st = presMap.get(a.id);
+    return st === "presente" || st === "concluido";
+  }).length;
+  const concluidos = atendimentos.filter((a) => presMap.get(a.id) === "concluido").length;
+  const faltas = atendimentos.filter((a) => presMap.get(a.id) === "faltou").length;
 
   const ordenados = [...atendimentos].sort((a, b) => a.hora.localeCompare(b.hora));
 
@@ -32,7 +40,7 @@ function Dashboard() {
     <div>
       <PageHeader
         title="Dashboard"
-        description={`Visão geral do dia ${new Date().toLocaleDateString("pt-BR", { dateStyle: "long" })}`}
+        description={`Visão geral · ${diaLabel}, ${new Date().toLocaleDateString("pt-BR", { dateStyle: "long" })}`}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -46,7 +54,7 @@ function Dashboard() {
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div>
             <h2 className="font-semibold">Agenda de hoje</h2>
-            <p className="text-xs text-muted-foreground">{ordenados.length} atendimentos</p>
+            <p className="text-xs text-muted-foreground">{ordenados.length} atendimentos fixos</p>
           </div>
           <Link to="/agenda" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
             Ver agenda completa <ArrowRight className="size-4" />
@@ -54,11 +62,12 @@ function Dashboard() {
         </div>
         <div className="divide-y">
           {ordenados.length === 0 && (
-            <p className="px-6 py-10 text-center text-sm text-muted-foreground">Nenhum atendimento agendado para hoje.</p>
+            <p className="px-6 py-10 text-center text-sm text-muted-foreground">Nenhum atendimento fixo para hoje.</p>
           )}
           {ordenados.map((a) => {
             const pac = pacientesMap.get(a.pacienteId);
             const ter = funcMap.get(a.terapeutaId);
+            const status = presMap.get(a.id) ?? "agendado";
             return (
               <div key={a.id} className="flex items-center gap-4 px-6 py-3 hover:bg-accent/40 transition-colors">
                 <div className="w-16 text-center">
@@ -70,7 +79,7 @@ function Dashboard() {
                     {a.terapia} • {ter?.nome ?? "—"}
                   </p>
                 </div>
-                <StatusBadge status={a.status} />
+                <StatusBadge status={status} />
               </div>
             );
           })}

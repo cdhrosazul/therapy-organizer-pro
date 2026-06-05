@@ -1,115 +1,52 @@
+## Mudança na Agenda: de "por data" para "fixa semanal"
 
-# Sistema de Gestão — Escola Rosazul (Front-end First)
+Hoje a Agenda usa atendimentos vinculados a uma **data específica** (`data: YYYY-MM-DD`). Vamos trocar para o modelo da planilha do Drive: uma **grade fixa por dia da semana** (Segunda, Terça, Quarta, Quinta, Sexta), igual às abas da sua planilha. O que for marcado na Segunda vale para **toda segunda-feira**.
 
-Aplicação web profissional, totalmente navegável, com dados simulados (mock). Sem back-end, sem banco, sem autenticação real. Arquitetura modular preparada para integração futura com APIs.
+### Como vai funcionar
 
-## Identidade visual
+- A página `/agenda` passa a ter **5 abas no topo**: Segunda · Terça · Quarta · Quinta · Sexta (como na sua planilha).
+- Cada aba mostra a grade fixa daquele dia da semana: terapeutas nas colunas, horários nas linhas (08:00–12:00 e 13:00–17:00, slots de 30 min, com intervalo de almoço).
+- Ao clicar em "+ Agendar", o paciente fica **fixo naquele slot toda semana** naquele dia (ex.: Lucas, segundas 08:00 com Ana Carolina).
+- Não existe mais o seletor de data na tela de Agenda — a grade é o "modelo padrão" da clínica.
 
-- Paleta inspirada no logo: azul Rosazul (#1E78C2 aprox.) como primária, branco, cinzas neutros e estados semânticos (verde/azul/vermelho) para o check-in.
-- Tipografia limpa (Inter), botões grandes, espaçamento generoso, foco em legibilidade para usuários com pouca familiaridade tecnológica.
-- Logo Rosazul no login e na sidebar.
+### Impacto no Check-in
 
-## Perfis e permissões (simuladas)
+O Check-in continua sendo **do dia de hoje**. A diferença é que ele passa a ler da grade fixa: ao buscar um paciente, o sistema mostra as sessões que ele tem **no dia da semana de hoje** (ex.: hoje é quarta → mostra os horários fixos da quarta dele) e marca presença para a data de hoje.
 
-Seletor de perfil na tela de login (Diretor, Administrativo, Recepção, Terapeuta) — sem senha real. Cada perfil vê apenas seus menus:
+### Impacto na Minha Agenda (terapeuta)
 
-- Diretor: tudo + gestão de usuários
-- Administrativo: funcionários, pacientes, agenda, documentos, logs, dashboard
-- Recepção: pacientes, agenda, check-in
-- Terapeuta: apenas sua agenda e pacientes vinculados
+O terapeuta vê a mesma estrutura por dia da semana — sua grade fixa semanal, somente leitura.
 
-## Telas / Rotas
+### Fora de escopo desta mudança
 
-```
-/login                        Tela de login com logo e seletor de perfil
-/dashboard                    KPIs do dia + agenda do dia (Diretor/Admin)
-/funcionarios                 Lista + busca + status
-/funcionarios/novo            Formulário completo (dados + documentos)
-/funcionarios/$id             Detalhe/edição com abas (Dados | Documentos)
-/pacientes                    Lista + busca por nome
-/pacientes/novo               Formulário (dados + terapias + documentos)
-/pacientes/$id                Detalhe com abas
-/agenda                       Grade semanal 08–12 / 13–17, slots de 30min
-/checkin                      Painel da recepção (busca + status visual)
-/minha-agenda                 Visão exclusiva do terapeuta
-/usuarios                     Gestão de usuários (Diretor)
-/logs                         Histórico de ações (Diretor/Admin)
-```
+- Exceções pontuais (paciente faltar num dia específico, trocar de horário só naquela semana, feriados) ficam para uma fase futura. Por enquanto a grade é o "padrão da clínica" e o Check-in registra presença/falta da data atual em cima dela.
 
-Rota raiz redireciona para /login; após "entrar" vai para /dashboard (ou /minha-agenda para terapeuta).
+---
 
-## Módulos detalhados
+### Detalhes técnicos
 
-### Dashboard
-Cards: Pacientes do dia, Presentes, Concluídos, Faltas. Agenda do dia em timeline. Atalhos rápidos.
+**Tipos (`src/types/index.ts`)**
+- Novo tipo `DiaSemana = "seg" | "ter" | "qua" | "qui" | "sex"`.
+- `Atendimento` deixa de ter `data: string` e passa a ter `diaSemana: DiaSemana`. Campos `hora`, `pacienteId`, `terapeutaId`, `terapia` permanecem.
+- Novo tipo `Presenca { id, atendimentoId, data: YYYY-MM-DD, status: "presente" | "faltou" | "concluido" }` para registrar o que aconteceu em cada data real (usado pelo Check-in e pelos logs).
 
-### Funcionários
-Tabela com filtros. Formulário com: dados pessoais (idade autocalculada do nascimento), cargo, especialidade, salário, escala, horários, status. Aba de Documentos com upload visual (RG, CPF, comprovante, diploma, certificados, contrato, currículo, foto) — aceita PDF/JPG/PNG; arquivos ficam apenas em memória.
+**Mocks (`src/mocks/data.ts`)**
+- Reescrever `atendimentos` distribuindo os pacientes existentes pelos 5 dias da semana, em um padrão parecido com a planilha enviada (vários pacientes fixos por dia/terapeuta).
 
-### Pacientes
-Lista com busca por nome. Formulário: dados básicos, convênio, múltiplas terapias (multi-select entre as 7 categorias). Upload de documentos (documento, carteirinha, laudos, relatórios, encaminhamentos, outros).
+**Serviços (`src/services/index.ts`)**
+- `listAtendimentos({ diaSemana?, terapeutaId? })` no lugar de filtrar por data.
+- `saveAtendimento` / `removeAtendimento` operam sobre a grade semanal.
+- `checkinPaciente(pacienteId, dataHoje)`: deriva o dia da semana de `dataHoje`, busca os atendimentos fixos do paciente nesse dia e cria registros em `presencas` com status `presente`.
+- Nova `listPresencas({ data })` para o Check-in mostrar quem já fez check-in hoje.
 
-### Agenda
-Grade tipo planilha: colunas = terapeutas (ou dias), linhas = slots de 30min das 08:00 às 12:00 e 13:00 às 17:00, com bloco visual de almoço. Clique em slot abre modal para agendar (paciente, terapeuta, terapia). Edição/remoção via modal. Terapeuta vê somente a própria coluna.
+**Rotas**
+- `src/routes/agenda.tsx`: remover input de data, adicionar Tabs (shadcn) para os 5 dias da semana. Grade e modal seguem iguais, só trocando `data` por `diaSemana`.
+- `src/routes/checkin.tsx`: deriva `diaSemana` da data de hoje; lista as sessões fixas do paciente daquele dia ao buscar.
+- `src/routes/minha-agenda.tsx`: mesma estrutura de abas por dia da semana, só leitura.
+- `src/routes/dashboard.tsx`: KPIs "Atendimentos de hoje" passam a contar os fixos do dia da semana atual.
 
-### Check-in
-Busca grande pelo nome. Lista os atendimentos do paciente no dia. Botão único "Confirmar chegada" muda status para Presente (verde). Estados:
-- Branco: não chegou
-- Verde: presente
-- Azul: concluído
-- Vermelho: faltou
+**Helpers (`src/lib/format.ts`)**
+- `diaSemanaDe(iso: string): DiaSemana` (segunda=`"seg"`, …).
+- Constante `DIAS_SEMANA` com label/valor para os tabs.
 
-Após check-in, tela mostra "Próxima sessão" ao consultar novamente.
-
-### Usuários (Diretor)
-CRUD visual de usuários internos com seleção de perfil. Botão "Redefinir senha" (mock) disponível para Administrativo.
-
-### Logs
-Tabela cronológica com mock de eventos (criação de usuário, alteração de cadastro, check-in, alterações de agenda, redefinição de senha).
-
-## Arquitetura de pastas
-
-```
-src/
-  routes/                    rotas TanStack (login, dashboard, etc.)
-  components/
-    layout/                  Sidebar, Topbar, AppShell
-    dashboard/               KPICard, TodayAgenda
-    funcionarios/            FuncionarioForm, FuncionariosTable, DocumentsUploader
-    pacientes/               PacienteForm, PacientesTable
-    agenda/                  AgendaGrid, SlotCell, AppointmentModal
-    checkin/                 CheckinSearch, CheckinCard, StatusBadge
-    ui/                      shadcn (já existente)
-  services/                  funcionarios.service.ts, pacientes.service.ts,
-                             agenda.service.ts, checkin.service.ts,
-                             usuarios.service.ts, logs.service.ts
-                             (cada um expõe API assíncrona que hoje lê de /mocks
-                              e amanhã troca para fetch real sem mudar UI)
-  mocks/                     funcionarios.json, pacientes.json, agenda.json,
-                             usuarios.json, logs.json
-  types/                     funcionario.ts, paciente.ts, agenda.ts,
-                             usuario.ts, perfil.ts, status.ts
-  lib/
-    auth/                    sessão simulada (perfil atual em memória/localStorage)
-    permissions.ts           mapa de perfis -> permissões/menus
-    date.ts                  utilitários (idade, slots de 30min)
-```
-
-Camada de serviços já assíncrona (`async function listPacientes(): Promise<Paciente[]>`) para que a futura troca por fetch seja transparente.
-
-## Detalhes técnicos
-
-- TanStack Start + Router (estrutura do template), Tailwind v4, shadcn/ui.
-- Tokens de design em `src/styles.css` (primária azul Rosazul, neutros, estados).
-- Logo carregado via Lovable Assets a partir do upload.
-- Estado da "sessão" (perfil atual) em `localStorage` + contexto leve; menus renderizados condicionalmente por permissão.
-- Mock data tipada; serviços retornam Promises (`await new Promise(r=>setTimeout(r,150))`) para simular latência.
-- Sem Lovable Cloud, sem Supabase, sem APIs reais nesta fase.
-
-## Fora do escopo (conforme spec)
-
-Financeiro, faturamento, convênios, evolução clínica, SaaS multiempresa, banco de dados, APIs, JWT/OAuth, upload real, persistência definitiva, recuperação de senha por e-mail.
-
-## Entregável
-
-Aplicação navegável que parece um sistema real, com todos os fluxos operacionais clicáveis e arquitetura pronta para receber back-end na fase 2.
+Sábado/domingo não aparecem (clínica funciona seg–sex, igual à planilha). Se quiser incluir sábado depois, é só estender o enum.

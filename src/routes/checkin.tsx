@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { buscarPacientes, checkinPaciente, listAtendimentos, listFuncionarios } from "@/services";
-import { hojeISO } from "@/lib/format";
+import { buscarPacientes, checkinPaciente, listAtendimentos, listFuncionarios, listPresencas } from "@/services";
+import { hojeISO, diaSemanaHoje, DIAS_SEMANA } from "@/lib/format";
 import { PageHeader } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
+import type { StatusPresenca } from "@/types";
 import { Search, CheckCircle2, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/checkin")({
@@ -14,32 +15,47 @@ export const Route = createFileRoute("/checkin")({
 
 function CheckinPage() {
   const data = hojeISO();
+  const diaSemana = diaSemanaHoje();
+  const diaLabel = DIAS_SEMANA.find((d) => d.value === diaSemana)?.label ?? "";
   const [termo, setTermo] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const qc = useQueryClient();
 
   const pacQuery = useQuery({ queryKey: ["pacientes:buscar", termo], queryFn: () => buscarPacientes(termo) });
-  const atQuery = useQuery({ queryKey: ["atendimentos", data], queryFn: () => listAtendimentos({ data }) });
+  const atQuery = useQuery({ queryKey: ["atendimentos", diaSemana], queryFn: () => listAtendimentos({ diaSemana }) });
   const funcQuery = useQuery({ queryKey: ["funcionarios"], queryFn: listFuncionarios });
+  const presQuery = useQuery({ queryKey: ["presencas", data], queryFn: () => listPresencas({ data }) });
 
   const funcMap = useMemo(() => new Map((funcQuery.data ?? []).map((f) => [f.id, f])), [funcQuery.data]);
+  const presMap = useMemo(
+    () => new Map((presQuery.data ?? []).map((p) => [p.atendimentoId, p.status as StatusPresenca])),
+    [presQuery.data],
+  );
   const atendimentos = atQuery.data ?? [];
   const resultados = pacQuery.data ?? [];
 
   const selecionado = resultados.find((p) => p.id === selectedId) ?? null;
-  const sessoes = selecionado ? atendimentos.filter((a) => a.pacienteId === selecionado.id).sort((a, b) => a.hora.localeCompare(b.hora)) : [];
-  const proxima = sessoes.find((s) => s.status === "agendado" || s.status === "presente");
-  const jaPresente = sessoes.some((s) => s.status === "presente" || s.status === "concluido");
+  const sessoes = selecionado
+    ? atendimentos.filter((a) => a.pacienteId === selecionado.id).sort((a, b) => a.hora.localeCompare(b.hora))
+    : [];
+  const proxima = sessoes.find((s) => {
+    const st = presMap.get(s.id);
+    return !st || st === "presente";
+  });
+  const jaPresente = sessoes.some((s) => {
+    const st = presMap.get(s.id);
+    return st === "presente" || st === "concluido";
+  });
 
   async function handleCheckin() {
     if (!selecionado) return;
     await checkinPaciente(selecionado.id, data);
-    await qc.invalidateQueries({ queryKey: ["atendimentos", data] });
+    await qc.invalidateQueries({ queryKey: ["presencas", data] });
   }
 
   return (
     <div>
-      <PageHeader title="Check-in" description="Confirme a chegada do paciente em um único clique." />
+      <PageHeader title="Check-in" description={`Confirme a chegada do paciente · hoje é ${diaLabel.toLowerCase()}`} />
 
       <div className="grid lg:grid-cols-[420px_1fr] gap-6">
         <div className="rounded-2xl border bg-card p-5">
@@ -113,19 +129,22 @@ function CheckinPage() {
               <div className="mt-5">
                 <h3 className="font-semibold mb-3">Sessões de hoje</h3>
                 {sessoes.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhuma sessão agendada para hoje.</p>
+                  <p className="text-sm text-muted-foreground">Nenhuma sessão fixa neste dia da semana.</p>
                 ) : (
                   <ul className="divide-y border rounded-lg">
-                    {sessoes.map((s) => (
-                      <li key={s.id} className="flex items-center gap-4 px-4 py-3">
-                        <p className="font-bold text-primary w-14">{s.hora}</p>
-                        <div className="flex-1">
-                          <p className="font-medium">{s.terapia}</p>
-                          <p className="text-xs text-muted-foreground">{funcMap.get(s.terapeutaId)?.nome}</p>
-                        </div>
-                        <StatusBadge status={s.status} />
-                      </li>
-                    ))}
+                    {sessoes.map((s) => {
+                      const status = presMap.get(s.id) ?? "agendado";
+                      return (
+                        <li key={s.id} className="flex items-center gap-4 px-4 py-3">
+                          <p className="font-bold text-primary w-14">{s.hora}</p>
+                          <div className="flex-1">
+                            <p className="font-medium">{s.terapia}</p>
+                            <p className="text-xs text-muted-foreground">{funcMap.get(s.terapeutaId)?.nome}</p>
+                          </div>
+                          <StatusBadge status={status} />
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

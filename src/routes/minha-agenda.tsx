@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { listAtendimentos, listPacientes } from "@/services";
-import { hojeISO } from "@/lib/format";
+import { DIAS_SEMANA, diaSemanaHoje } from "@/lib/format";
 import { PageHeader } from "@/components/layout/AppShell";
-import { StatusBadge } from "@/components/StatusBadge";
+import type { DiaSemana } from "@/types";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/minha-agenda")({
@@ -13,20 +14,37 @@ export const Route = createFileRoute("/minha-agenda")({
 
 function MinhaAgenda() {
   const { session } = useAuth();
-  const data = hojeISO();
-  const at = useQuery({ queryKey: ["atendimentos", data, session?.funcionarioId], queryFn: () => listAtendimentos({ data, terapeutaId: session?.funcionarioId }) });
+  const [diaSemana, setDiaSemana] = useState<DiaSemana>(diaSemanaHoje());
+  const at = useQuery({
+    queryKey: ["atendimentos", diaSemana, session?.funcionarioId],
+    queryFn: () => listAtendimentos({ diaSemana, terapeutaId: session?.funcionarioId }),
+  });
   const pac = useQuery({ queryKey: ["pacientes"], queryFn: listPacientes });
   const lista = (at.data ?? []).sort((a, b) => a.hora.localeCompare(b.hora));
   const pacMap = new Map((pac.data ?? []).map((p) => [p.id, p]));
 
   return (
     <div>
-      <PageHeader title="Minha agenda" description={new Date().toLocaleDateString("pt-BR", { dateStyle: "full" })} />
+      <PageHeader title="Minha agenda" description="Sua grade fixa semanal" />
+
+      <div className="mb-4 inline-flex rounded-xl border bg-card p-1">
+        {DIAS_SEMANA.map((d) => (
+          <button
+            key={d.value}
+            onClick={() => setDiaSemana(d.value)}
+            className={`px-4 h-9 rounded-lg text-sm font-medium transition-colors ${
+              diaSemana === d.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            {d.labelCurto}
+          </button>
+        ))}
+      </div>
 
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="divide-y">
           {lista.length === 0 && (
-            <p className="p-10 text-center text-muted-foreground text-sm">Nenhum atendimento hoje.</p>
+            <p className="p-10 text-center text-muted-foreground text-sm">Nenhum atendimento fixo neste dia.</p>
           )}
           {lista.map((a) => {
             const p = pacMap.get(a.pacienteId);
@@ -37,7 +55,6 @@ function MinhaAgenda() {
                   <p className="font-medium">{p?.nome ?? "Paciente"}</p>
                   <p className="text-xs text-muted-foreground">{a.terapia} · {p?.convenio}</p>
                 </div>
-                <StatusBadge status={a.status} />
               </div>
             );
           })}
