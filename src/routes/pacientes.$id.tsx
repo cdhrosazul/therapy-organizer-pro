@@ -1,12 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getPaciente, listAtendimentos, savePaciente } from "@/services";
+import { getPaciente, listAtendimentos, removePaciente, savePaciente } from "@/services";
 import { PageHeader } from "@/components/layout/AppShell";
 import { TerapiaScheduleModal } from "@/components/TerapiaScheduleModal";
 import type { Paciente, Especialidade } from "@/types";
 import { convenios, especialidades } from "@/mocks/data";
-import { Upload, X, Save, ArrowLeft, CalendarClock } from "lucide-react";
+import { Upload, X, Save, ArrowLeft, CalendarClock, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/pacientes/$id")({
   head: () => ({ meta: [{ title: "Paciente — Escola Rosazul" }] }),
