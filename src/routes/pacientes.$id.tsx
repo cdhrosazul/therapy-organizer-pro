@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { getPaciente, savePaciente } from "@/services";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getPaciente, listAtendimentos, savePaciente } from "@/services";
 import { PageHeader } from "@/components/layout/AppShell";
+import { TerapiaScheduleModal } from "@/components/TerapiaScheduleModal";
 import type { Paciente, Especialidade } from "@/types";
 import { convenios, especialidades } from "@/mocks/data";
-import { Upload, X, Save, ArrowLeft } from "lucide-react";
+import { Upload, X, Save, ArrowLeft, CalendarClock } from "lucide-react";
 
 export const Route = createFileRoute("/pacientes/$id")({
   head: () => ({ meta: [{ title: "Paciente — Escola Rosazul" }] }),
@@ -24,9 +26,18 @@ const empty: Paciente = {
 function PacienteForm() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const isNew = id === "novo";
   const [p, setP] = useState<Paciente>(empty);
   const [tab, setTab] = useState<"dados" | "documentos">("dados");
+  const [terapiaModal, setTerapiaModal] = useState<Especialidade | null>(null);
+
+  const atQuery = useQuery({
+    queryKey: ["atendimentos:paciente", p.id],
+    queryFn: () => listAtendimentos({ pacienteId: p.id }),
+    enabled: !!p.id && !isNew,
+  });
+  const atendimentos = atQuery.data ?? [];
 
   useEffect(() => {
     if (isNew) {
@@ -36,17 +47,23 @@ function PacienteForm() {
     getPaciente(id).then((res) => res && setP(res));
   }, [id, isNew]);
 
-  function toggleTerapia(e: Especialidade) {
-    setP((prev) => ({
-      ...prev,
-      terapias: prev.terapias.includes(e) ? prev.terapias.filter((t) => t !== e) : [...prev.terapias, e],
-    }));
+  function handleTerapiaClick(e: Especialidade) {
+    if (isNew) {
+      // No paciente novo, toggle simples — salva primeiro para depois agendar.
+      setP((prev) => ({
+        ...prev,
+        terapias: prev.terapias.includes(e) ? prev.terapias.filter((t) => t !== e) : [...prev.terapias, e],
+      }));
+      return;
+    }
+    setTerapiaModal(e);
   }
 
   async function handleSave() {
     await savePaciente(p);
     navigate({ to: "/pacientes" });
   }
+
 
   function handleFiles(tipo: string, files: FileList | null) {
     if (!files) return;
