@@ -41,6 +41,7 @@ function PacienteForm() {
   const [p, setP] = useState<Paciente>(empty);
   const [tab, setTab] = useState<"dados" | "documentos">("dados");
   const [terapiaModal, setTerapiaModal] = useState<Especialidade | null>(null);
+  const [confirmDel, setConfirmDel] = useState(false);
 
   const atQuery = useQuery({
     queryKey: ["atendimentos:paciente", p.id],
