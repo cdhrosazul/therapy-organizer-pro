@@ -7,7 +7,7 @@ import logo from "@/assets/rosazul-logo.jpg.asset.json";
 import { LogIn } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Entrar — Centro De Desenvolvimento Humano Rosazul" }] }),
+  head: () => ({ meta: [{ title: "Entrar — Centro de Desenv" }] }),
   component: LoginPage,
 });
 
@@ -36,10 +36,10 @@ function LoginPage() {
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
         <div className="flex items-center gap-3">
-          <img src={logo.url} alt="Centro De Desenvolvimento Humano Rosazul" className="size-14 rounded-xl bg-white p-1" />
+          <img src={logo.url} alt="Centro de Desenv" className="size-14 rounded-xl bg-white p-1" />
           <div>
-            <p className="font-bold text-lg leading-tight">Centro De Desenvolvimento Humano Rosazul</p>
-            <p className="text-sm opacity-80">Gestão Clínica Integrada</p>
+            <p className="font-bold text-lg leading-tight">Centro de Desenv</p>
+            <p className="text-sm opacity-80">Sistema Desenvolvido por Nunes.Tech</p>
           </div>
         </div>
         <div className="space-y-4">
@@ -54,13 +54,13 @@ function LoginPage() {
             <li>• Controle de acesso por perfil</li>
           </ul>
         </div>
-        <p className="text-xs opacity-70">© Centro De Desenvolvimento Humano Rosazul · Demonstração Front-end</p>
+        <p className="text-xs opacity-70">© Centro De Desenvolvimento Humano Rosazul ·</p>
       </div>
 
       <div className="flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <img src={logo.url} alt="Centro De Desenvolvimento Humano Rosazul" className="size-16" />
+            <img src={logo.url} alt="Centro de Desenv" className="size-16" />
           </div>
           <h1 className="text-2xl font-bold mb-1">Entrar no sistema</h1>
           <p className="text-sm text-muted-foreground mb-6">
