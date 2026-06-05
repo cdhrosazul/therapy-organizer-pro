@@ -1,52 +1,39 @@
-## Mudança na Agenda: de "por data" para "fixa semanal"
+## Vincular terapia ao paciente já cria o horário fixo na agenda
 
-Hoje a Agenda usa atendimentos vinculados a uma **data específica** (`data: YYYY-MM-DD`). Vamos trocar para o modelo da planilha do Drive: uma **grade fixa por dia da semana** (Segunda, Terça, Quarta, Quinta, Sexta), igual às abas da sua planilha. O que for marcado na Segunda vale para **toda segunda-feira**.
+Hoje, na ficha do paciente, "Terapias vinculadas" é só uma lista de chips — marcar uma terapia não cria nada na agenda. Vamos transformar esse momento no ponto onde o horário fixo nasce.
 
 ### Como vai funcionar
 
-- A página `/agenda` passa a ter **5 abas no topo**: Segunda · Terça · Quarta · Quinta · Sexta (como na sua planilha).
-- Cada aba mostra a grade fixa daquele dia da semana: terapeutas nas colunas, horários nas linhas (08:00–12:00 e 13:00–17:00, slots de 30 min, com intervalo de almoço).
-- Ao clicar em "+ Agendar", o paciente fica **fixo naquele slot toda semana** naquele dia (ex.: Lucas, segundas 08:00 com Ana Carolina).
-- Não existe mais o seletor de data na tela de Agenda — a grade é o "modelo padrão" da clínica.
+**Ao clicar em uma terapia ainda não vinculada** (ex.: "Fisioterapia"):
+- Abre um modal "Agendar Fisioterapia para [Paciente]" com:
+  - **Terapeuta** — só lista os profissionais cuja especialidade é Fisioterapia.
+  - **Dia da semana** — chips Segunda · Terça · Quarta · Quinta · Sexta.
+  - **Horário** — chips de 30 em 30 minutos (08:00–12:00 e 13:00–17:00). Slots **já ocupados** pelo terapeuta naquele dia aparecem desabilitados, em cinza, com o nome do paciente que ocupa (ex.: "10:00 — ocupado por Lucas").
+  - Botão **+ Adicionar outro horário** para repetir o bloco (ex.: paciente faz Fisio segunda 09:00 E quarta 09:00).
+- Ao confirmar: cria os atendimentos fixos na grade semanal e adiciona a terapia ao paciente. A Agenda atualiza automaticamente (mesma query, invalidada).
 
-### Impacto no Check-in
+**Ao clicar em uma terapia já vinculada**:
+- Abre o mesmo modal mostrando os horários fixos atuais daquela terapia (lista editável: remover slot, adicionar novo). Permite também "Remover terapia" no rodapé — que apaga a terapia + todos os slots fixos dela na agenda (com confirmação).
 
-O Check-in continua sendo **do dia de hoje**. A diferença é que ele passa a ler da grade fixa: ao buscar um paciente, o sistema mostra as sessões que ele tem **no dia da semana de hoje** (ex.: hoje é quarta → mostra os horários fixos da quarta dele) e marca presença para a data de hoje.
+**Feedback visual no chip da terapia**:
+- Chip ativo passa a mostrar o número de sessões fixas vinculadas (ex.: "Fisioterapia · 2x").
 
-### Impacto na Minha Agenda (terapeuta)
+### Onde a mudança vive
 
-O terapeuta vê a mesma estrutura por dia da semana — sua grade fixa semanal, somente leitura.
-
-### Fora de escopo desta mudança
-
-- Exceções pontuais (paciente faltar num dia específico, trocar de horário só naquela semana, feriados) ficam para uma fase futura. Por enquanto a grade é o "padrão da clínica" e o Check-in registra presença/falta da data atual em cima dela.
-
----
+- `src/routes/pacientes.$id.tsx`: o chip de terapia abre o modal em vez de só toggleizar; a contagem `Nx` vem dos atendimentos do paciente.
+- `src/components/TerapiaScheduleModal.tsx` (novo): UI do modal (terapeuta + lista de slots dia/hora + detecção de conflito).
+- `src/services/index.ts`: já tem `saveAtendimento`/`removeAtendimento` e `listAtendimentos({ pacienteId })`. Sem mudanças aqui.
 
 ### Detalhes técnicos
 
-**Tipos (`src/types/index.ts`)**
-- Novo tipo `DiaSemana = "seg" | "ter" | "qua" | "qui" | "sex"`.
-- `Atendimento` deixa de ter `data: string` e passa a ter `diaSemana: DiaSemana`. Campos `hora`, `pacienteId`, `terapeutaId`, `terapia` permanecem.
-- Novo tipo `Presenca { id, atendimentoId, data: YYYY-MM-DD, status: "presente" | "faltou" | "concluido" }` para registrar o que aconteceu em cada data real (usado pelo Check-in e pelos logs).
+- O modal carrega `listFuncionarios()` e filtra por `especialidade === terapia`.
+- Carrega `listAtendimentos({ diaSemana })` sob demanda para marcar conflitos por terapeuta+hora.
+- Ao confirmar, faz `saveAtendimento` em paralelo para cada slot adicionado, `removeAtendimento` para os removidos, e depois `savePaciente` com a lista final de terapias.
+- Invalida queries `["atendimentos", diaSemana]`, `["atendimentos"]` e `["pacientes"]`.
+- Conflito de horário (mesmo terapeuta, mesmo dia/hora) bloqueia o botão "Confirmar" com mensagem clara.
 
-**Mocks (`src/mocks/data.ts`)**
-- Reescrever `atendimentos` distribuindo os pacientes existentes pelos 5 dias da semana, em um padrão parecido com a planilha enviada (vários pacientes fixos por dia/terapeuta).
+### Fora de escopo
 
-**Serviços (`src/services/index.ts`)**
-- `listAtendimentos({ diaSemana?, terapeutaId? })` no lugar de filtrar por data.
-- `saveAtendimento` / `removeAtendimento` operam sobre a grade semanal.
-- `checkinPaciente(pacienteId, dataHoje)`: deriva o dia da semana de `dataHoje`, busca os atendimentos fixos do paciente nesse dia e cria registros em `presencas` com status `presente`.
-- Nova `listPresencas({ data })` para o Check-in mostrar quem já fez check-in hoje.
-
-**Rotas**
-- `src/routes/agenda.tsx`: remover input de data, adicionar Tabs (shadcn) para os 5 dias da semana. Grade e modal seguem iguais, só trocando `data` por `diaSemana`.
-- `src/routes/checkin.tsx`: deriva `diaSemana` da data de hoje; lista as sessões fixas do paciente daquele dia ao buscar.
-- `src/routes/minha-agenda.tsx`: mesma estrutura de abas por dia da semana, só leitura.
-- `src/routes/dashboard.tsx`: KPIs "Atendimentos de hoje" passam a contar os fixos do dia da semana atual.
-
-**Helpers (`src/lib/format.ts`)**
-- `diaSemanaDe(iso: string): DiaSemana` (segunda=`"seg"`, …).
-- Constante `DIAS_SEMANA` com label/valor para os tabs.
-
-Sábado/domingo não aparecem (clínica funciona seg–sex, igual à planilha). Se quiser incluir sábado depois, é só estender o enum.
+- Repetição em datas específicas (já é fixo semanal por design).
+- Sugestão automática do melhor horário/terapeuta.
+- Edição em massa de vários pacientes ao mesmo tempo.
