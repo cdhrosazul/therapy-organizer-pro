@@ -54,7 +54,7 @@ function LoginPage() {
             <li>• Controle de acesso por perfil</li>
           </ul>
         </div>
-        <p className="text-xs opacity-70">© Centro De Desenvolvimento Humano Rosazul ·</p>
+        <p className="text-xs opacity-70">© Centro de Desenv ·</p>
       </div>
 
       <div className="flex items-center justify-center p-6 lg:p-12">

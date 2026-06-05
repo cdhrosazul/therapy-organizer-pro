@@ -6,7 +6,7 @@ import { formatBRL } from "@/lib/format";
 import { Plus, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/funcionarios/")({
-  head: () => ({ meta: [{ title: "Funcionários — Centro De Desenvolvimento Humano Rosazul" }] }),
+  head: () => ({ meta: [{ title: "Funcionários — Centro de Desenv" }] }),
   component: FuncList,
 });
 
