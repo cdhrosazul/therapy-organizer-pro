@@ -76,8 +76,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Escola Rosazul — Gestão Clínica" },
-      { name: "description", content: "Sistema interno de gestão administrativa da clínica Escola Rosazul." },
+      { title: "Centro De Desenvolvimento Humano Rosazul — Gestão Clínica" },
+      { name: "description", content: "Sistema interno de gestão administrativa da clínica Centro De Desenvolvimento Humano Rosazul." },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
