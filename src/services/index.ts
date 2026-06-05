@@ -2,15 +2,17 @@ import {
   funcionarios as mockFunc,
   pacientes as mockPac,
   atendimentos as mockAtd,
+  presencas as mockPres,
   usuarios as mockUsu,
   logs as mockLogs,
 } from "@/mocks/data";
-import type { Funcionario, Paciente, Atendimento, Usuario, LogEntry, StatusAtendimento } from "@/types";
+import type { Funcionario, Paciente, Atendimento, Presenca, Usuario, LogEntry, StatusPresenca, DiaSemana } from "@/types";
+import { diaSemanaDe } from "@/lib/format";
 
-// In-memory mutable stores so the demo feels real within a session.
 let _func = [...mockFunc];
 let _pac = [...mockPac];
 let _atd = [...mockAtd];
+let _pres = [...mockPres];
 let _usu = [...mockUsu];
 let _logs = [...mockLogs];
 
@@ -18,10 +20,7 @@ const delay = (ms = 120) => new Promise((r) => setTimeout(r, ms));
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 function pushLog(usuario: string, acao: string, detalhe: string) {
-  _logs = [
-    { id: uid(), data: new Date().toISOString(), usuario, acao, detalhe },
-    ..._logs,
-  ];
+  _logs = [{ id: uid(), data: new Date().toISOString(), usuario, acao, detalhe }, ..._logs];
 }
 
 // Funcionários
@@ -76,12 +75,13 @@ export async function savePaciente(p: Paciente, usuario = "admin") {
   return p;
 }
 
-// Atendimentos
-export async function listAtendimentos(filtro?: { data?: string; terapeutaId?: string }): Promise<Atendimento[]> {
+// Atendimentos (grade fixa semanal)
+export async function listAtendimentos(filtro?: { diaSemana?: DiaSemana; terapeutaId?: string; pacienteId?: string }): Promise<Atendimento[]> {
   await delay();
   let list = _atd;
-  if (filtro?.data) list = list.filter((a) => a.data === filtro.data);
+  if (filtro?.diaSemana) list = list.filter((a) => a.diaSemana === filtro.diaSemana);
   if (filtro?.terapeutaId) list = list.filter((a) => a.terapeutaId === filtro.terapeutaId);
+  if (filtro?.pacienteId) list = list.filter((a) => a.pacienteId === filtro.pacienteId);
   return list;
 }
 export async function saveAtendimento(a: Atendimento, usuario = "admin") {
@@ -89,11 +89,11 @@ export async function saveAtendimento(a: Atendimento, usuario = "admin") {
   const exists = _atd.find((x) => x.id === a.id);
   if (exists) {
     _atd = _atd.map((x) => (x.id === a.id ? a : x));
-    pushLog(usuario, "Agenda alterada", `Atendimento ${a.hora}`);
+    pushLog(usuario, "Agenda alterada", `Slot fixo ${a.diaSemana} ${a.hora}`);
   } else {
     a.id = a.id || uid();
     _atd = [..._atd, a];
-    pushLog(usuario, "Agenda criada", `Atendimento ${a.hora}`);
+    pushLog(usuario, "Agenda criada", `Slot fixo ${a.diaSemana} ${a.hora}`);
   }
   return a;
 }
@@ -101,24 +101,46 @@ export async function removeAtendimento(id: string, usuario = "admin") {
   await delay();
   const item = _atd.find((x) => x.id === id);
   _atd = _atd.filter((x) => x.id !== id);
-  if (item) pushLog(usuario, "Agenda removida", `Atendimento ${item.hora}`);
-}
-export async function atualizarStatusAtendimento(id: string, status: StatusAtendimento) {
-  await delay(60);
-  _atd = _atd.map((x) => (x.id === id ? { ...x, status } : x));
+  if (item) pushLog(usuario, "Agenda removida", `Slot fixo ${item.diaSemana} ${item.hora}`);
 }
 
-// Check-in: marca todos os atendimentos do paciente naquele dia como "presente"
+// Presenças (instâncias diárias sobre a grade fixa)
+export async function listPresencas(filtro?: { data?: string; atendimentoId?: string }): Promise<Presenca[]> {
+  await delay(60);
+  let list = _pres;
+  if (filtro?.data) list = list.filter((p) => p.data === filtro.data);
+  if (filtro?.atendimentoId) list = list.filter((p) => p.atendimentoId === filtro.atendimentoId);
+  return list;
+}
+export async function registrarPresenca(atendimentoId: string, data: string, status: StatusPresenca) {
+  await delay(60);
+  const existing = _pres.find((p) => p.atendimentoId === atendimentoId && p.data === data);
+  if (existing) {
+    _pres = _pres.map((p) => (p.id === existing.id ? { ...p, status } : p));
+    return existing;
+  }
+  const novo: Presenca = { id: uid(), atendimentoId, data, status };
+  _pres = [..._pres, novo];
+  return novo;
+}
+
+// Check-in: marca presença para todos os atendimentos fixos do paciente no dia da semana de "data".
 export async function checkinPaciente(pacienteId: string, data: string, usuario = "recepcao") {
   await delay();
+  const dia = diaSemanaDe(data);
+  if (!dia) return 0;
+  const sessoes = _atd.filter((a) => a.pacienteId === pacienteId && a.diaSemana === dia);
   let count = 0;
-  _atd = _atd.map((a) => {
-    if (a.pacienteId === pacienteId && a.data === data && a.status === "agendado") {
-      count++;
-      return { ...a, status: "presente" as StatusAtendimento };
+  for (const s of sessoes) {
+    const ja = _pres.find((p) => p.atendimentoId === s.id && p.data === data);
+    if (ja && (ja.status === "presente" || ja.status === "concluido")) continue;
+    if (ja) {
+      _pres = _pres.map((p) => (p.id === ja.id ? { ...p, status: "presente" as StatusPresenca } : p));
+    } else {
+      _pres = [..._pres, { id: uid(), atendimentoId: s.id, data, status: "presente" }];
     }
-    return a;
-  });
+    count++;
+  }
   const pac = _pac.find((p) => p.id === pacienteId);
   pushLog(usuario, "Check-in", `Paciente ${pac?.nome ?? pacienteId} (${count} sessões)`);
   return count;

@@ -41,3 +41,24 @@ export function hojeISO(): string {
   const d = new Date();
   return d.toISOString().slice(0, 10);
 }
+
+import type { DiaSemana } from "@/types";
+
+export const DIAS_SEMANA: { value: DiaSemana; label: string; labelCurto: string }[] = [
+  { value: "seg", label: "Segunda-feira", labelCurto: "Segunda" },
+  { value: "ter", label: "Terça-feira", labelCurto: "Terça" },
+  { value: "qua", label: "Quarta-feira", labelCurto: "Quarta" },
+  { value: "qui", label: "Quinta-feira", labelCurto: "Quinta" },
+  { value: "sex", label: "Sexta-feira", labelCurto: "Sexta" },
+];
+
+export function diaSemanaDe(iso: string): DiaSemana | null {
+  const d = new Date(iso + "T12:00:00");
+  const idx = d.getDay(); // 0=dom .. 6=sab
+  const map: Record<number, DiaSemana | null> = { 0: null, 1: "seg", 2: "ter", 3: "qua", 4: "qui", 5: "sex", 6: null };
+  return map[idx];
+}
+
+export function diaSemanaHoje(): DiaSemana {
+  return diaSemanaDe(hojeISO()) ?? "seg";
+}

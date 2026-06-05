@@ -9,6 +9,8 @@ export type Especialidade =
   | "Psicomotricidade"
   | "Musicoterapia";
 
+export type DiaSemana = "seg" | "ter" | "qua" | "qui" | "sex";
+
 export interface Usuario {
   id: string;
   nome: string;
@@ -21,7 +23,7 @@ export interface Usuario {
 export interface Funcionario {
   id: string;
   nome: string;
-  dataNascimento: string; // ISO
+  dataNascimento: string;
   cpf: string;
   rg: string;
   endereco: string;
@@ -56,22 +58,28 @@ export interface Paciente {
   documentos: DocumentoArquivo[];
 }
 
-export type StatusAtendimento = "agendado" | "presente" | "concluido" | "faltou";
+export type StatusPresenca = "presente" | "concluido" | "faltou";
 
 export interface Atendimento {
   id: string;
-  data: string; // YYYY-MM-DD
+  diaSemana: DiaSemana;
   hora: string; // HH:mm
   pacienteId: string;
   terapeutaId: string;
   terapia: Especialidade;
-  status: StatusAtendimento;
   observacao?: string;
+}
+
+export interface Presenca {
+  id: string;
+  atendimentoId: string;
+  data: string; // YYYY-MM-DD
+  status: StatusPresenca;
 }
 
 export interface LogEntry {
   id: string;
-  data: string; // ISO
+  data: string;
   usuario: string;
   acao: string;
   detalhe: string;
