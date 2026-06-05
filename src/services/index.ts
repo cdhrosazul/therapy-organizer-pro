@@ -75,6 +75,17 @@ export async function savePaciente(p: Paciente, usuario = "admin") {
   return p;
 }
 
+export async function removePaciente(id: string, usuario = "admin") {
+  await delay();
+  const pac = _pac.find((p) => p.id === id);
+  const sessoes = _atd.filter((a) => a.pacienteId === id);
+  const sessoesIds = new Set(sessoes.map((s) => s.id));
+  _atd = _atd.filter((a) => a.pacienteId !== id);
+  _pres = _pres.filter((p) => !sessoesIds.has(p.atendimentoId));
+  _pac = _pac.filter((p) => p.id !== id);
+  pushLog(usuario, "Paciente excluído", `${pac?.nome ?? id} (${sessoes.length} sessões fixas removidas)`);
+}
+
 // Atendimentos (grade fixa semanal)
 export async function listAtendimentos(filtro?: { diaSemana?: DiaSemana; terapeutaId?: string; pacienteId?: string }): Promise<Atendimento[]> {
   await delay();

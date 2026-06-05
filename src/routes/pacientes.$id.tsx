@@ -1,12 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getPaciente, listAtendimentos, savePaciente } from "@/services";
+import { getPaciente, listAtendimentos, removePaciente, savePaciente } from "@/services";
 import { PageHeader } from "@/components/layout/AppShell";
 import { TerapiaScheduleModal } from "@/components/TerapiaScheduleModal";
 import type { Paciente, Especialidade } from "@/types";
 import { convenios, especialidades } from "@/mocks/data";
-import { Upload, X, Save, ArrowLeft, CalendarClock } from "lucide-react";
+import { Upload, X, Save, ArrowLeft, CalendarClock, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/pacientes/$id")({
   head: () => ({ meta: [{ title: "Paciente — Escola Rosazul" }] }),
@@ -31,6 +41,7 @@ function PacienteForm() {
   const [p, setP] = useState<Paciente>(empty);
   const [tab, setTab] = useState<"dados" | "documentos">("dados");
   const [terapiaModal, setTerapiaModal] = useState<Especialidade | null>(null);
+  const [confirmDel, setConfirmDel] = useState(false);
 
   const atQuery = useQuery({
     queryKey: ["atendimentos:paciente", p.id],
@@ -64,6 +75,13 @@ function PacienteForm() {
     navigate({ to: "/pacientes" });
   }
 
+  async function handleDelete() {
+    await removePaciente(p.id);
+    await qc.invalidateQueries({ queryKey: ["pacientes:buscar"] });
+    await qc.invalidateQueries({ queryKey: ["atendimentos"] });
+    navigate({ to: "/pacientes" });
+  }
+
 
   function handleFiles(tipo: string, files: FileList | null) {
     if (!files) return;
@@ -89,9 +107,19 @@ function PacienteForm() {
       <PageHeader
         title={isNew ? "Novo paciente" : p.nome || "Paciente"}
         actions={
-          <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-            <Save className="size-4" /> Salvar
-          </button>
+          <div className="flex items-center gap-2">
+            {!isNew && (
+              <button
+                onClick={() => setConfirmDel(true)}
+                className="inline-flex items-center gap-2 rounded-md border border-destructive/30 px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="size-4" /> Excluir
+              </button>
+            )}
+            <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+              <Save className="size-4" /> Salvar
+            </button>
+          </div>
         }
       />
 
@@ -197,6 +225,26 @@ function PacienteForm() {
           }}
         />
       )}
+
+      <AlertDialog open={confirmDel} onOpenChange={setConfirmDel}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {p.nome || "paciente"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove o paciente e todos os horários fixos vinculados. Não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
