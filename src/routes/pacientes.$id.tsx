@@ -107,9 +107,19 @@ function PacienteForm() {
       <PageHeader
         title={isNew ? "Novo paciente" : p.nome || "Paciente"}
         actions={
-          <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-            <Save className="size-4" /> Salvar
-          </button>
+          <div className="flex items-center gap-2">
+            {!isNew && (
+              <button
+                onClick={() => setConfirmDel(true)}
+                className="inline-flex items-center gap-2 rounded-md border border-destructive/30 px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="size-4" /> Excluir
+              </button>
+            )}
+            <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+              <Save className="size-4" /> Salvar
+            </button>
+          </div>
         }
       />
 
