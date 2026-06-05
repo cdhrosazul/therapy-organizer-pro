@@ -75,6 +75,13 @@ function PacienteForm() {
     navigate({ to: "/pacientes" });
   }
 
+  async function handleDelete() {
+    await removePaciente(p.id);
+    await qc.invalidateQueries({ queryKey: ["pacientes:buscar"] });
+    await qc.invalidateQueries({ queryKey: ["atendimentos"] });
+    navigate({ to: "/pacientes" });
+  }
+
 
   function handleFiles(tipo: string, files: FileList | null) {
     if (!files) return;
