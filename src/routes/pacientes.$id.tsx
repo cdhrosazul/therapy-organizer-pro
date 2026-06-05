@@ -201,20 +201,7 @@ function PacienteForm() {
   );
 }
 
-          </div>
-        )}
 
-        {tab === "documentos" && (
-          <div className="p-6 space-y-5">
-            {["Documento pessoal", "Carteirinha do convênio", "Laudo médico", "Relatório terapêutico", "Encaminhamento", "Outros"].map((tipo) => (
-              <DocSection key={tipo} tipo={tipo} docs={p.documentos.filter((d) => d.tipo === tipo)} onUpload={(f) => handleFiles(tipo, f)} onRemove={removeDoc} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 const inputCls = "w-full h-10 rounded-md border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring";
 
