@@ -134,22 +134,73 @@ function PacienteForm() {
             </Field>
             <div className="md:col-span-2">
               <label className="text-sm font-medium mb-2 block">Terapias vinculadas</label>
+              {!isNew && (
+                <p className="text-xs text-muted-foreground mb-3 inline-flex items-center gap-1">
+                  <CalendarClock className="size-3" /> Clique em uma terapia para definir os horários fixos na agenda.
+                </p>
+              )}
               <div className="flex flex-wrap gap-2">
                 {especialidades.map((e) => {
                   const on = p.terapias.includes(e);
+                  const count = atendimentos.filter((a) => a.terapia === e).length;
                   return (
                     <button
                       key={e}
                       type="button"
-                      onClick={() => toggleTerapia(e)}
-                      className={`rounded-full px-3 py-1.5 text-sm border transition-colors ${on ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent"}`}
+                      onClick={() => handleTerapiaClick(e)}
+                      className={`rounded-full px-3 py-1.5 text-sm border transition-colors inline-flex items-center gap-1.5 ${on ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent"}`}
                     >
                       {e}
+                      {on && count > 0 && (
+                        <span className="inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-primary-foreground/20 text-[10px] font-bold px-1.5">
+                          {count}x
+                        </span>
+                      )}
                     </button>
                   );
                 })}
               </div>
             </div>
+          </div>
+        )}
+
+        {tab === "documentos" && (
+          <div className="p-6 space-y-5">
+            {["Documento pessoal", "Carteirinha do convênio", "Laudo médico", "Relatório terapêutico", "Encaminhamento", "Outros"].map((tipo) => (
+              <DocSection key={tipo} tipo={tipo} docs={p.documentos.filter((d) => d.tipo === tipo)} onUpload={(f) => handleFiles(tipo, f)} onRemove={removeDoc} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {terapiaModal && !isNew && (
+        <TerapiaScheduleModal
+          pacienteId={p.id}
+          pacienteNome={p.nome || "paciente"}
+          terapia={terapiaModal}
+          onClose={() => setTerapiaModal(null)}
+          onSaved={async () => {
+            if (!p.terapias.includes(terapiaModal)) {
+              const novo = { ...p, terapias: [...p.terapias, terapiaModal] };
+              setP(novo);
+              await savePaciente(novo);
+            }
+            await qc.invalidateQueries({ queryKey: ["atendimentos:paciente", p.id] });
+            setTerapiaModal(null);
+          }}
+          onRemoveTerapia={async () => {
+            const novo = { ...p, terapias: p.terapias.filter((t) => t !== terapiaModal) };
+            setP(novo);
+            await savePaciente(novo);
+            await qc.invalidateQueries({ queryKey: ["atendimentos:paciente", p.id] });
+            setTerapiaModal(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
           </div>
         )}
 
