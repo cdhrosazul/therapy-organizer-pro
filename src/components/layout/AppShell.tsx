@@ -116,10 +116,10 @@ function SidebarContent({
   return (
     <>
       <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">
-        <img src={logo.url} alt="Centro De Desenvolvimento Humano Rosazul" className="size-10 rounded-md object-contain bg-white" />
+        <img src={logo.url} alt="Centro de Desenv" className="size-10 rounded-md object-contain bg-white" />
         <div>
-          <p className="text-sm font-bold leading-tight">Centro De Desenvolvimento Humano Rosazul</p>
-          <p className="text-xs text-muted-foreground">Gestão Clínica</p>
+          <p className="text-sm font-bold leading-tight">Centro de Desenv</p>
+          <p className="text-xs text-muted-foreground">Gestão Clínica Inte</p>
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto p-3">

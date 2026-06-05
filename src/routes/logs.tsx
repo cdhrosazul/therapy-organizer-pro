@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/AppShell";
 import { formatDataHora } from "@/lib/format";
 
 export const Route = createFileRoute("/logs")({
-  head: () => ({ meta: [{ title: "Logs — Centro De Desenvolvimento Humano Rosazul" }] }),
+  head: () => ({ meta: [{ title: "Logs — Centro de Desenv" }] }),
   component: LogsPage,
 });
 

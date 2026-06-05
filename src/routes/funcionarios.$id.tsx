@@ -8,7 +8,7 @@ import { calcularIdade } from "@/lib/format";
 import { Upload, X, Save, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/funcionarios/$id")({
-  head: () => ({ meta: [{ title: "Funcionário — Centro De Desenvolvimento Humano Rosazul" }] }),
+  head: () => ({ meta: [{ title: "Funcionário — Centro de Desenv" }] }),
   component: FuncForm,
 });
 
