@@ -8,7 +8,7 @@ import type { DiaSemana } from "@/types";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/minha-agenda")({
-  head: () => ({ meta: [{ title: "Minha agenda — Escola Rosazul" }] }),
+  head: () => ({ meta: [{ title: "Minha agenda — Centro De Desenvolvimento Humano Rosazul" }] }),
   component: MinhaAgenda,
 });
 

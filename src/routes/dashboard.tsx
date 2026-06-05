@@ -8,7 +8,7 @@ import type { StatusPresenca } from "@/types";
 import { CalendarDays, CheckCircle2, UserCheck, UserX, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — Escola Rosazul" }] }),
+  head: () => ({ meta: [{ title: "Dashboard — Centro De Desenvolvimento Humano Rosazul" }] }),
   component: Dashboard,
 });
 

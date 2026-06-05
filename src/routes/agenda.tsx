@@ -17,7 +17,7 @@ import { especialidades } from "@/mocks/data";
 import { Plus, Trash2, X } from "lucide-react";
 
 export const Route = createFileRoute("/agenda")({
-  head: () => ({ meta: [{ title: "Agenda — Escola Rosazul" }] }),
+  head: () => ({ meta: [{ title: "Agenda — Centro De Desenvolvimento Humano Rosazul" }] }),
   component: AgendaPage,
 });
 
