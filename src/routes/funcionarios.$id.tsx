@@ -1,11 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { getFuncionario, saveFuncionario } from "@/services";
+import { getFuncionario, removeFuncionario, saveFuncionario } from "@/services";
 import { PageHeader } from "@/components/layout/AppShell";
 import type { Funcionario, Especialidade } from "@/types";
 import { especialidades } from "@/mocks/data";
 import { calcularIdade } from "@/lib/format";
-import { Upload, X, Save, ArrowLeft } from "lucide-react";
+import { Upload, X, Save, ArrowLeft, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 export const Route = createFileRoute("/funcionarios/$id")({
   head: () => ({ meta: [{ title: "Funcionário — Centro de Desenv" }] }),
