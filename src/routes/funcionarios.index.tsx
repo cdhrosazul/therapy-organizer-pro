@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/funcionarios/")({
-  head: () => ({ meta: [{ title: "Funcionários — Centro de Desenv" }] }),
+  head: () => ({ meta: [{ title: "Funcionários — Centro de Desenvolvimento Humano Rosazul" }] }),
   component: FuncList,
 });
 

@@ -9,7 +9,7 @@ import type { StatusPresenca } from "@/types";
 import { Search, CheckCircle2, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/checkin")({
-  head: () => ({ meta: [{ title: "Check-in — Centro de Desenv" }] }),
+  head: () => ({ meta: [{ title: "Check-in — Centro de Desenvolvimento Humano Rosazul" }] }),
   component: CheckinPage,
 });
 

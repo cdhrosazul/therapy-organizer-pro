@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/pacientes/$id")({
-  head: () => ({ meta: [{ title: "Paciente — Centro de Desenv" }] }),
+  head: () => ({ meta: [{ title: "Paciente — Centro de Desenvolvimento Humano Rosazul" }] }),
   component: PacienteForm,
 });
 
