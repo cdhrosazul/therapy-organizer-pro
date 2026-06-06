@@ -1,11 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { getFuncionario, saveFuncionario } from "@/services";
+import { getFuncionario, removeFuncionario, saveFuncionario } from "@/services";
 import { PageHeader } from "@/components/layout/AppShell";
 import type { Funcionario, Especialidade } from "@/types";
 import { especialidades } from "@/mocks/data";
 import { calcularIdade } from "@/lib/format";
-import { Upload, X, Save, ArrowLeft } from "lucide-react";
+import { Upload, X, Save, ArrowLeft, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 export const Route = createFileRoute("/funcionarios/$id")({
   head: () => ({ meta: [{ title: "Funcionário — Centro de Desenv" }] }),
@@ -36,6 +47,7 @@ function FuncForm() {
   const isNew = id === "novo";
   const [f, setF] = useState<Funcionario>(empty);
   const [tab, setTab] = useState<"dados" | "documentos">("dados");
+  const [confirmDel, setConfirmDel] = useState(false);
 
   useEffect(() => {
     if (isNew) {
@@ -49,6 +61,12 @@ function FuncForm() {
     await saveFuncionario(f);
     navigate({ to: "/funcionarios" });
   }
+
+  async function handleDelete() {
+    await removeFuncionario(f.id);
+    navigate({ to: "/funcionarios" });
+  }
+
 
   function handleFiles(tipo: string, files: FileList | null) {
     if (!files) return;
@@ -70,11 +88,22 @@ function FuncForm() {
       <PageHeader
         title={isNew ? "Novo funcionário" : f.nome || "Funcionário"}
         actions={
-          <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-            <Save className="size-4" /> Salvar
-          </button>
+          <div className="flex items-center gap-2">
+            {!isNew && (
+              <button
+                onClick={() => setConfirmDel(true)}
+                className="inline-flex items-center gap-2 rounded-md border border-destructive/30 px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="size-4" /> Excluir
+              </button>
+            )}
+            <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+              <Save className="size-4" /> Salvar
+            </button>
+          </div>
         }
       />
+
 
       <div className="rounded-2xl border bg-card">
         <div className="flex gap-1 border-b px-4 pt-3">
@@ -176,6 +205,26 @@ function FuncForm() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={confirmDel} onOpenChange={setConfirmDel}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {f.nome}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove o funcionário e todos os horários fixos em que ele é terapeuta. Não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
