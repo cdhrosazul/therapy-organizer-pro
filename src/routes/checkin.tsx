@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { StatusPresenca } from "@/types";
 import { Search, CheckCircle2, Clock } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/checkin")({
   head: () => ({ meta: [{ title: "Check-in — Centro de Desenvolvimento Humano Rosazul" }] }),
@@ -49,8 +50,14 @@ function CheckinPage() {
 
   async function handleCheckin() {
     if (!selecionado) return;
-    await checkinPaciente(selecionado.id, data);
-    await qc.invalidateQueries({ queryKey: ["presencas", data] });
+    try {
+      const n = await checkinPaciente(selecionado.id, data);
+      await qc.invalidateQueries({ queryKey: ["presencas", data] });
+      if (n > 0) toast.success(`${n} sessão(ões) confirmada(s)`);
+      else toast.info("Nenhuma sessão pendente para confirmar.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao confirmar chegada.");
+    }
   }
 
   return (

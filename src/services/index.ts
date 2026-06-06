@@ -416,9 +416,13 @@ export async function checkinPaciente(pacienteId: string, data: string): Promise
     const j = ja as { id: string; status: StatusPresenca } | null;
     if (j && (j.status === "presente" || j.status === "concluido")) continue;
     if (j) {
-      await supabase.from("presencas").update({ status: "presente" }).eq("id", j.id);
+      const { error: upErr } = await supabase.from("presencas").update({ status: "presente" }).eq("id", j.id);
+      if (upErr) throw upErr;
     } else {
-      await supabase.from("presencas").insert({ atendimento_id: sid, data, status: "presente" });
+      const { error: insErr } = await supabase
+        .from("presencas")
+        .insert({ atendimento_id: sid, data, status: "presente" });
+      if (insErr) throw insErr;
     }
     count++;
   }
