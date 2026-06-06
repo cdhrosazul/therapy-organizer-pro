@@ -88,11 +88,22 @@ function FuncForm() {
       <PageHeader
         title={isNew ? "Novo funcionário" : f.nome || "Funcionário"}
         actions={
-          <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-            <Save className="size-4" /> Salvar
-          </button>
+          <div className="flex items-center gap-2">
+            {!isNew && (
+              <button
+                onClick={() => setConfirmDel(true)}
+                className="inline-flex items-center gap-2 rounded-md border border-destructive/30 px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="size-4" /> Excluir
+              </button>
+            )}
+            <button onClick={handleSave} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+              <Save className="size-4" /> Salvar
+            </button>
+          </div>
         }
       />
+
 
       <div className="rounded-2xl border bg-card">
         <div className="flex gap-1 border-b px-4 pt-3">
