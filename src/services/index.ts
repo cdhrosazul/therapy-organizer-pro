@@ -1,238 +1,479 @@
-import {
-  funcionarios as mockFunc,
-  pacientes as mockPac,
-  atendimentos as mockAtd,
-  presencas as mockPres,
-  usuarios as mockUsu,
-  logs as mockLogs,
-  anotacoes as mockAnot,
-} from "@/mocks/data";
-import type { Funcionario, Paciente, Atendimento, Presenca, Usuario, LogEntry, StatusPresenca, DiaSemana, Anotacao } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import type {
+  Funcionario,
+  Paciente,
+  Atendimento,
+  Presenca,
+  Usuario,
+  LogEntry,
+  StatusPresenca,
+  DiaSemana,
+  Anotacao,
+  DocumentoArquivo,
+  Especialidade,
+} from "@/types";
 import { diaSemanaDe } from "@/lib/format";
 
-let _func = [...mockFunc];
-let _pac = [...mockPac];
-let _atd = [...mockAtd];
-let _pres = [...mockPres];
-let _usu = [...mockUsu];
-let _logs = [...mockLogs];
-let _anot = [...mockAnot];
+// ---------- helpers ----------
 
-
-const delay = (ms = 120) => new Promise((r) => setTimeout(r, ms));
-const uid = () => Math.random().toString(36).slice(2, 10);
-
-function pushLog(usuario: string, acao: string, detalhe: string) {
-  _logs = [{ id: uid(), data: new Date().toISOString(), usuario, acao, detalhe }, ..._logs];
+async function currentUser() {
+  const { data } = await supabase.auth.getUser();
+  return data.user;
 }
 
-// Funcionários
+async function currentUserName(): Promise<string> {
+  const u = await currentUser();
+  if (!u) return "—";
+  const { data } = await supabase.from("profiles").select("nome").eq("id", u.id).maybeSingle();
+  return data?.nome ?? u.email ?? "—";
+}
+
+async function pushLog(acao: string, detalhe: string, usuarioOverride?: string) {
+  const u = await currentUser();
+  const usuario = usuarioOverride ?? u?.email ?? "sistema";
+  await supabase.from("logs").insert({
+    data: new Date().toISOString(),
+    usuario,
+    acao,
+    detalhe,
+  });
+}
+
+// ---------- mappers ----------
+
+interface DbFuncionario {
+  id: string;
+  nome: string;
+  data_nascimento: string | null;
+  cpf: string | null;
+  rg: string | null;
+  endereco: string | null;
+  telefone: string | null;
+  cargo: string;
+  especialidade: string | null;
+  salario: number | null;
+  escala: string | null;
+  horario_entrada: string | null;
+  horario_saida: string | null;
+  status: "ativo" | "inativo" | "ferias";
+  documentos: DocumentoArquivo[] | null;
+}
+
+const funcFromDb = (d: DbFuncionario): Funcionario => ({
+  id: d.id,
+  nome: d.nome,
+  dataNascimento: d.data_nascimento ?? "",
+  cpf: d.cpf ?? "",
+  rg: d.rg ?? "",
+  endereco: d.endereco ?? "",
+  telefone: d.telefone ?? "",
+  cargo: d.cargo,
+  especialidade: (d.especialidade ?? undefined) as Especialidade | undefined,
+  salario: d.salario ?? 0,
+  escala: d.escala ?? "",
+  horarioEntrada: d.horario_entrada ?? "",
+  horarioSaida: d.horario_saida ?? "",
+  status: d.status,
+  documentos: d.documentos ?? [],
+});
+
+const funcToDb = (f: Funcionario) => ({
+  id: f.id || undefined,
+  nome: f.nome,
+  data_nascimento: f.dataNascimento || null,
+  cpf: f.cpf || null,
+  rg: f.rg || null,
+  endereco: f.endereco || null,
+  telefone: f.telefone || null,
+  cargo: f.cargo,
+  especialidade: f.especialidade ?? null,
+  salario: f.salario ?? 0,
+  escala: f.escala || null,
+  horario_entrada: f.horarioEntrada || null,
+  horario_saida: f.horarioSaida || null,
+  status: f.status,
+  documentos: f.documentos ?? [],
+});
+
+interface DbPaciente {
+  id: string;
+  nome: string;
+  data_nascimento: string | null;
+  endereco: string | null;
+  telefone: string | null;
+  convenio: string | null;
+  terapias: string[] | null;
+  responsavel: string | null;
+  documentos: DocumentoArquivo[] | null;
+}
+
+const pacFromDb = (d: DbPaciente): Paciente => ({
+  id: d.id,
+  nome: d.nome,
+  dataNascimento: d.data_nascimento ?? undefined,
+  endereco: d.endereco ?? "",
+  telefone: d.telefone ?? "",
+  convenio: d.convenio ?? "",
+  terapias: (d.terapias ?? []) as Especialidade[],
+  responsavel: d.responsavel ?? undefined,
+  documentos: d.documentos ?? [],
+});
+
+const pacToDb = (p: Paciente) => ({
+  id: p.id || undefined,
+  nome: p.nome,
+  data_nascimento: p.dataNascimento || null,
+  endereco: p.endereco || null,
+  telefone: p.telefone || null,
+  convenio: p.convenio || null,
+  terapias: p.terapias ?? [],
+  responsavel: p.responsavel || null,
+  documentos: p.documentos ?? [],
+});
+
+interface DbAtendimento {
+  id: string;
+  dia_semana: DiaSemana;
+  hora: string;
+  paciente_id: string;
+  terapeuta_id: string;
+  terapia: string;
+  observacao: string | null;
+}
+const atdFromDb = (d: DbAtendimento): Atendimento => ({
+  id: d.id,
+  diaSemana: d.dia_semana,
+  hora: d.hora,
+  pacienteId: d.paciente_id,
+  terapeutaId: d.terapeuta_id,
+  terapia: d.terapia as Especialidade,
+  observacao: d.observacao ?? undefined,
+});
+const atdToDb = (a: Atendimento) => ({
+  id: a.id || undefined,
+  dia_semana: a.diaSemana,
+  hora: a.hora,
+  paciente_id: a.pacienteId,
+  terapeuta_id: a.terapeutaId,
+  terapia: a.terapia,
+  observacao: a.observacao ?? null,
+});
+
+interface DbPresenca {
+  id: string;
+  atendimento_id: string;
+  data: string;
+  status: StatusPresenca;
+}
+const presFromDb = (d: DbPresenca): Presenca => ({
+  id: d.id,
+  atendimentoId: d.atendimento_id,
+  data: d.data,
+  status: d.status,
+});
+
+interface DbAnotacao {
+  id: string;
+  paciente_id: string;
+  autor: string;
+  autor_nome: string;
+  data: string;
+  texto: string;
+}
+const anotFromDb = (d: DbAnotacao): Anotacao => ({
+  id: d.id,
+  pacienteId: d.paciente_id,
+  autor: d.autor,
+  autorNome: d.autor_nome,
+  data: d.data,
+  texto: d.texto,
+});
+
+interface DbProfile {
+  id: string;
+  nome: string;
+  perfil: Usuario["perfil"];
+  funcionario_id: string | null;
+  ativo: boolean;
+  email: string | null;
+}
+const profFromDb = (d: DbProfile): Usuario => ({
+  id: d.id,
+  nome: d.nome,
+  usuario: d.email ?? "",
+  perfil: d.perfil,
+  funcionarioId: d.funcionario_id ?? undefined,
+  ativo: d.ativo,
+});
+
+// ---------- Funcionários ----------
+
 export async function listFuncionarios(): Promise<Funcionario[]> {
-  await delay();
-  return _func;
+  const { data, error } = await supabase.from("funcionarios").select("*").order("nome");
+  if (error) throw error;
+  return (data ?? []).map((d) => funcFromDb(d as DbFuncionario));
 }
-export async function getFuncionario(id: string) {
-  await delay();
-  return _func.find((f) => f.id === id) ?? null;
+export async function getFuncionario(id: string): Promise<Funcionario | null> {
+  const { data, error } = await supabase.from("funcionarios").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? funcFromDb(data as DbFuncionario) : null;
 }
-export async function saveFuncionario(f: Funcionario, usuario = "admin") {
-  await delay();
-  const exists = _func.find((x) => x.id === f.id);
-  if (exists) {
-    _func = _func.map((x) => (x.id === f.id ? f : x));
-    pushLog(usuario, "Cadastro alterado", `Funcionário ${f.nome}`);
-  } else {
-    f.id = f.id || uid();
-    _func = [..._func, f];
-    pushLog(usuario, "Cadastro criado", `Funcionário ${f.nome}`);
+export async function saveFuncionario(f: Funcionario): Promise<Funcionario> {
+  const payload = funcToDb(f);
+  if (f.id) {
+    const { data, error } = await supabase.from("funcionarios").update(payload).eq("id", f.id).select().single();
+    if (error) throw error;
+    await pushLog("Cadastro alterado", `Funcionário ${f.nome}`);
+    return funcFromDb(data as DbFuncionario);
   }
-  return f;
+  const { data, error } = await supabase.from("funcionarios").insert(payload).select().single();
+  if (error) throw error;
+  await pushLog("Cadastro criado", `Funcionário ${f.nome}`);
+  return funcFromDb(data as DbFuncionario);
+}
+export async function removeFuncionario(id: string): Promise<void> {
+  const { data: fn } = await supabase.from("funcionarios").select("nome").eq("id", id).maybeSingle();
+  const { error } = await supabase.from("funcionarios").delete().eq("id", id);
+  if (error) throw error;
+  await pushLog("Funcionário excluído", `${fn?.nome ?? id}`);
 }
 
-// Pacientes
+// ---------- Pacientes ----------
+
 export async function listPacientes(): Promise<Paciente[]> {
-  await delay();
-  return _pac;
+  const { data, error } = await supabase.from("pacientes").select("*").order("nome");
+  if (error) throw error;
+  return (data ?? []).map((d) => pacFromDb(d as DbPaciente));
 }
-export async function getPaciente(id: string) {
-  await delay();
-  return _pac.find((p) => p.id === id) ?? null;
+export async function getPaciente(id: string): Promise<Paciente | null> {
+  const { data, error } = await supabase.from("pacientes").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? pacFromDb(data as DbPaciente) : null;
 }
-export async function buscarPacientes(termo: string) {
-  await delay(80);
-  const t = termo.trim().toLowerCase();
-  if (!t) return _pac;
-  return _pac.filter((p) => p.nome.toLowerCase().includes(t));
+export async function buscarPacientes(termo: string): Promise<Paciente[]> {
+  const t = termo.trim();
+  let q = supabase.from("pacientes").select("*").order("nome");
+  if (t) q = q.ilike("nome", `%${t}%`);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map((d) => pacFromDb(d as DbPaciente));
 }
-export async function savePaciente(p: Paciente, usuario = "admin") {
-  await delay();
-  const exists = _pac.find((x) => x.id === p.id);
-  if (exists) {
-    _pac = _pac.map((x) => (x.id === p.id ? p : x));
-    pushLog(usuario, "Cadastro alterado", `Paciente ${p.nome}`);
-  } else {
-    p.id = p.id || uid();
-    _pac = [..._pac, p];
-    pushLog(usuario, "Cadastro criado", `Paciente ${p.nome}`);
+export async function savePaciente(p: Paciente): Promise<Paciente> {
+  const payload = pacToDb(p);
+  if (p.id) {
+    const { data, error } = await supabase.from("pacientes").update(payload).eq("id", p.id).select().single();
+    if (error) throw error;
+    await pushLog("Cadastro alterado", `Paciente ${p.nome}`);
+    return pacFromDb(data as DbPaciente);
   }
-  return p;
+  const { data, error } = await supabase.from("pacientes").insert(payload).select().single();
+  if (error) throw error;
+  await pushLog("Cadastro criado", `Paciente ${p.nome}`);
+  return pacFromDb(data as DbPaciente);
+}
+export async function removePaciente(id: string): Promise<void> {
+  const { data: pac } = await supabase.from("pacientes").select("nome").eq("id", id).maybeSingle();
+  const { error } = await supabase.from("pacientes").delete().eq("id", id);
+  if (error) throw error;
+  await pushLog("Paciente excluído", `${pac?.nome ?? id}`);
 }
 
-export async function removeFuncionario(id: string, usuario = "admin") {
-  await delay();
-  const func = _func.find((f) => f.id === id);
-  const sessoes = _atd.filter((a) => a.terapeutaId === id);
-  const sessoesIds = new Set(sessoes.map((s) => s.id));
-  _atd = _atd.filter((a) => a.terapeutaId !== id);
-  _pres = _pres.filter((p) => !sessoesIds.has(p.atendimentoId));
-  _usu = _usu.filter((u) => u.funcionarioId !== id);
-  _func = _func.filter((f) => f.id !== id);
-  pushLog(usuario, "Funcionário excluído", `${func?.nome ?? id} (${sessoes.length} sessões fixas removidas)`);
-}
+// ---------- Anotações ----------
 
-export async function removePaciente(id: string, usuario = "admin") {
-  await delay();
-  const pac = _pac.find((p) => p.id === id);
-  const sessoes = _atd.filter((a) => a.pacienteId === id);
-  const sessoesIds = new Set(sessoes.map((s) => s.id));
-  _atd = _atd.filter((a) => a.pacienteId !== id);
-  _pres = _pres.filter((p) => !sessoesIds.has(p.atendimentoId));
-  _anot = _anot.filter((n) => n.pacienteId !== id);
-  _pac = _pac.filter((p) => p.id !== id);
-  pushLog(usuario, "Paciente excluído", `${pac?.nome ?? id} (${sessoes.length} sessões fixas removidas)`);
-}
-
-// Anotações
 export async function listAnotacoes(filtro?: { pacienteId?: string; pacienteIds?: string[] }): Promise<Anotacao[]> {
-  await delay();
-  let list = _anot;
-  if (filtro?.pacienteId) list = list.filter((n) => n.pacienteId === filtro.pacienteId);
-  if (filtro?.pacienteIds) {
-    const set = new Set(filtro.pacienteIds);
-    list = list.filter((n) => set.has(n.pacienteId));
-  }
-  return [...list].sort((a, b) => b.data.localeCompare(a.data));
+  let q = supabase.from("anotacoes").select("*").order("data", { ascending: false });
+  if (filtro?.pacienteId) q = q.eq("paciente_id", filtro.pacienteId);
+  if (filtro?.pacienteIds && filtro.pacienteIds.length > 0) q = q.in("paciente_id", filtro.pacienteIds);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map((d) => anotFromDb(d as DbAnotacao));
 }
-export async function saveAnotacao(a: Anotacao, usuario = "admin", autorNome = "—") {
-  await delay();
-  const exists = _anot.find((x) => x.id === a.id);
-  if (exists) {
-    _anot = _anot.map((x) => (x.id === a.id ? { ...a } : x));
-    pushLog(usuario, "Anotação alterada", `Paciente ${_pac.find((p) => p.id === a.pacienteId)?.nome ?? a.pacienteId}`);
-  } else {
-    a.id = a.id || uid();
-    a.data = a.data || new Date().toISOString();
-    a.autor = a.autor || usuario;
-    a.autorNome = a.autorNome || autorNome;
-    _anot = [a, ..._anot];
-    pushLog(usuario, "Anotação criada", `Paciente ${_pac.find((p) => p.id === a.pacienteId)?.nome ?? a.pacienteId}`);
+export async function saveAnotacao(a: Anotacao, _usuarioIgnored?: string, autorNomeIn?: string): Promise<Anotacao> {
+  const u = await currentUser();
+  if (!u) throw new Error("Não autenticado");
+  if (a.id) {
+    const { data, error } = await supabase
+      .from("anotacoes")
+      .update({ texto: a.texto })
+      .eq("id", a.id)
+      .select()
+      .single();
+    if (error) throw error;
+    await pushLog("Anotação alterada", `Paciente ${a.pacienteId}`);
+    return anotFromDb(data as DbAnotacao);
   }
-  return a;
+  const autorNome = autorNomeIn || (await currentUserName());
+  const { data, error } = await supabase
+    .from("anotacoes")
+    .insert({
+      paciente_id: a.pacienteId,
+      autor: u.id,
+      autor_nome: autorNome,
+      data: new Date().toISOString(),
+      texto: a.texto,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  await pushLog("Anotação criada", `Paciente ${a.pacienteId}`);
+  return anotFromDb(data as DbAnotacao);
 }
-export async function removeAnotacao(id: string, usuario = "admin") {
-  await delay();
-  const n = _anot.find((x) => x.id === id);
-  _anot = _anot.filter((x) => x.id !== id);
-  if (n) pushLog(usuario, "Anotação removida", `Paciente ${_pac.find((p) => p.id === n.pacienteId)?.nome ?? n.pacienteId}`);
+export async function removeAnotacao(id: string): Promise<void> {
+  const { data: n } = await supabase.from("anotacoes").select("paciente_id").eq("id", id).maybeSingle();
+  const { error } = await supabase.from("anotacoes").delete().eq("id", id);
+  if (error) throw error;
+  if (n) await pushLog("Anotação removida", `Paciente ${n.paciente_id}`);
 }
 
+// ---------- Atendimentos ----------
 
-// Atendimentos (grade fixa semanal)
-export async function listAtendimentos(filtro?: { diaSemana?: DiaSemana; terapeutaId?: string; pacienteId?: string }): Promise<Atendimento[]> {
-  await delay();
-  let list = _atd;
-  if (filtro?.diaSemana) list = list.filter((a) => a.diaSemana === filtro.diaSemana);
-  if (filtro?.terapeutaId) list = list.filter((a) => a.terapeutaId === filtro.terapeutaId);
-  if (filtro?.pacienteId) list = list.filter((a) => a.pacienteId === filtro.pacienteId);
-  return list;
+export async function listAtendimentos(filtro?: {
+  diaSemana?: DiaSemana;
+  terapeutaId?: string;
+  pacienteId?: string;
+}): Promise<Atendimento[]> {
+  let q = supabase.from("atendimentos").select("*").order("hora");
+  if (filtro?.diaSemana) q = q.eq("dia_semana", filtro.diaSemana);
+  if (filtro?.terapeutaId) q = q.eq("terapeuta_id", filtro.terapeutaId);
+  if (filtro?.pacienteId) q = q.eq("paciente_id", filtro.pacienteId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map((d) => atdFromDb(d as DbAtendimento));
 }
-export async function saveAtendimento(a: Atendimento, usuario = "admin") {
-  await delay();
-  const exists = _atd.find((x) => x.id === a.id);
-  if (exists) {
-    _atd = _atd.map((x) => (x.id === a.id ? a : x));
-    pushLog(usuario, "Agenda alterada", `Slot fixo ${a.diaSemana} ${a.hora}`);
-  } else {
-    a.id = a.id || uid();
-    _atd = [..._atd, a];
-    pushLog(usuario, "Agenda criada", `Slot fixo ${a.diaSemana} ${a.hora}`);
+export async function saveAtendimento(a: Atendimento): Promise<Atendimento> {
+  const payload = atdToDb(a);
+  if (a.id) {
+    const { data, error } = await supabase.from("atendimentos").update(payload).eq("id", a.id).select().single();
+    if (error) throw error;
+    await pushLog("Agenda alterada", `Slot fixo ${a.diaSemana} ${a.hora}`);
+    return atdFromDb(data as DbAtendimento);
   }
-  return a;
+  const { data, error } = await supabase.from("atendimentos").insert(payload).select().single();
+  if (error) throw error;
+  await pushLog("Agenda criada", `Slot fixo ${a.diaSemana} ${a.hora}`);
+  return atdFromDb(data as DbAtendimento);
 }
-export async function removeAtendimento(id: string, usuario = "admin") {
-  await delay();
-  const item = _atd.find((x) => x.id === id);
-  _atd = _atd.filter((x) => x.id !== id);
-  if (item) pushLog(usuario, "Agenda removida", `Slot fixo ${item.diaSemana} ${item.hora}`);
+export async function removeAtendimento(id: string): Promise<void> {
+  const { data: at } = await supabase.from("atendimentos").select("dia_semana, hora").eq("id", id).maybeSingle();
+  const { error } = await supabase.from("atendimentos").delete().eq("id", id);
+  if (error) throw error;
+  if (at) await pushLog("Agenda removida", `Slot fixo ${at.dia_semana} ${at.hora}`);
 }
 
-// Presenças (instâncias diárias sobre a grade fixa)
+// ---------- Presenças ----------
+
 export async function listPresencas(filtro?: { data?: string; atendimentoId?: string }): Promise<Presenca[]> {
-  await delay(60);
-  let list = _pres;
-  if (filtro?.data) list = list.filter((p) => p.data === filtro.data);
-  if (filtro?.atendimentoId) list = list.filter((p) => p.atendimentoId === filtro.atendimentoId);
-  return list;
+  let q = supabase.from("presencas").select("*");
+  if (filtro?.data) q = q.eq("data", filtro.data);
+  if (filtro?.atendimentoId) q = q.eq("atendimento_id", filtro.atendimentoId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []).map((d) => presFromDb(d as DbPresenca));
 }
-export async function registrarPresenca(atendimentoId: string, data: string, status: StatusPresenca) {
-  await delay(60);
-  const existing = _pres.find((p) => p.atendimentoId === atendimentoId && p.data === data);
+export async function registrarPresenca(atendimentoId: string, data: string, status: StatusPresenca): Promise<Presenca> {
+  const { data: existing } = await supabase
+    .from("presencas")
+    .select("*")
+    .eq("atendimento_id", atendimentoId)
+    .eq("data", data)
+    .maybeSingle();
   if (existing) {
-    _pres = _pres.map((p) => (p.id === existing.id ? { ...p, status } : p));
-    return existing;
+    const { data: upd, error } = await supabase
+      .from("presencas")
+      .update({ status })
+      .eq("id", (existing as DbPresenca).id)
+      .select()
+      .single();
+    if (error) throw error;
+    return presFromDb(upd as DbPresenca);
   }
-  const novo: Presenca = { id: uid(), atendimentoId, data, status };
-  _pres = [..._pres, novo];
-  return novo;
+  const { data: ins, error } = await supabase
+    .from("presencas")
+    .insert({ atendimento_id: atendimentoId, data, status })
+    .select()
+    .single();
+  if (error) throw error;
+  return presFromDb(ins as DbPresenca);
 }
-
-// Check-in: marca presença para todos os atendimentos fixos do paciente no dia da semana de "data".
-export async function checkinPaciente(pacienteId: string, data: string, usuario = "recepcao") {
-  await delay();
+export async function checkinPaciente(pacienteId: string, data: string): Promise<number> {
   const dia = diaSemanaDe(data);
   if (!dia) return 0;
-  const sessoes = _atd.filter((a) => a.pacienteId === pacienteId && a.diaSemana === dia);
+  const { data: sessoes, error } = await supabase
+    .from("atendimentos")
+    .select("id")
+    .eq("paciente_id", pacienteId)
+    .eq("dia_semana", dia);
+  if (error) throw error;
   let count = 0;
-  for (const s of sessoes) {
-    const ja = _pres.find((p) => p.atendimentoId === s.id && p.data === data);
-    if (ja && (ja.status === "presente" || ja.status === "concluido")) continue;
-    if (ja) {
-      _pres = _pres.map((p) => (p.id === ja.id ? { ...p, status: "presente" as StatusPresenca } : p));
+  for (const s of sessoes ?? []) {
+    const sid = (s as { id: string }).id;
+    const { data: ja } = await supabase
+      .from("presencas")
+      .select("id, status")
+      .eq("atendimento_id", sid)
+      .eq("data", data)
+      .maybeSingle();
+    const j = ja as { id: string; status: StatusPresenca } | null;
+    if (j && (j.status === "presente" || j.status === "concluido")) continue;
+    if (j) {
+      await supabase.from("presencas").update({ status: "presente" }).eq("id", j.id);
     } else {
-      _pres = [..._pres, { id: uid(), atendimentoId: s.id, data, status: "presente" }];
+      await supabase.from("presencas").insert({ atendimento_id: sid, data, status: "presente" });
     }
     count++;
   }
-  const pac = _pac.find((p) => p.id === pacienteId);
-  pushLog(usuario, "Check-in", `Paciente ${pac?.nome ?? pacienteId} (${count} sessões)`);
+  const { data: pac } = await supabase.from("pacientes").select("nome").eq("id", pacienteId).maybeSingle();
+  await pushLog("Check-in", `Paciente ${pac?.nome ?? pacienteId} (${count} sessões)`);
   return count;
 }
 
-// Usuários
+// ---------- Usuários (profiles) ----------
+
 export async function listUsuarios(): Promise<Usuario[]> {
-  await delay();
-  return _usu;
+  const { data, error } = await supabase.from("profiles").select("*").order("nome");
+  if (error) throw error;
+  return (data ?? []).map((d) => profFromDb(d as DbProfile));
 }
-export async function saveUsuario(u: Usuario, autor = "diretor") {
-  await delay();
-  const exists = _usu.find((x) => x.id === u.id);
-  if (exists) {
-    _usu = _usu.map((x) => (x.id === u.id ? u : x));
-    pushLog(autor, "Usuário alterado", u.usuario);
-  } else {
-    u.id = u.id || uid();
-    _usu = [..._usu, u];
-    pushLog(autor, "Usuário criado", `Novo usuário: ${u.usuario}`);
+export async function saveUsuario(u: Usuario): Promise<Usuario> {
+  if (!u.id) {
+    throw new Error(
+      "Criação de novos usuários deve ser feita no Supabase Dashboard (Authentication → Add user). Depois ajuste o perfil aqui.",
+    );
   }
-  return u;
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      nome: u.nome,
+      perfil: u.perfil,
+      funcionario_id: u.funcionarioId ?? null,
+      ativo: u.ativo,
+    })
+    .eq("id", u.id)
+    .select()
+    .single();
+  if (error) throw error;
+  await pushLog("Usuário alterado", u.usuario);
+  return profFromDb(data as DbProfile);
 }
-export async function redefinirSenha(usuario: string, autor = "admin") {
-  await delay();
-  pushLog(autor, "Senha redefinida", `Usuário ${usuario}`);
+export async function redefinirSenha(usuario: string): Promise<void> {
+  // usuario aqui é o email
+  const { error } = await supabase.auth.resetPasswordForEmail(usuario, {
+    redirectTo: typeof window !== "undefined" ? `${window.location.origin}/login` : undefined,
+  });
+  if (error) throw error;
+  await pushLog("Senha redefinida", `Usuário ${usuario}`);
 }
 
-// Logs
+// ---------- Logs ----------
+
 export async function listLogs(): Promise<LogEntry[]> {
-  await delay();
-  return _logs;
+  const { data, error } = await supabase.from("logs").select("*").order("data", { ascending: false }).limit(500);
+  if (error) throw error;
+  return (data ?? []).map((d) => ({
+    id: (d as { id: string }).id,
+    data: (d as { data: string }).data,
+    usuario: (d as { usuario: string }).usuario,
+    acao: (d as { acao: string }).acao,
+    detalhe: (d as { detalhe: string }).detalhe,
+  }));
 }
