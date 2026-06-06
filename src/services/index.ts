@@ -5,8 +5,9 @@ import {
   presencas as mockPres,
   usuarios as mockUsu,
   logs as mockLogs,
+  anotacoes as mockAnot,
 } from "@/mocks/data";
-import type { Funcionario, Paciente, Atendimento, Presenca, Usuario, LogEntry, StatusPresenca, DiaSemana } from "@/types";
+import type { Funcionario, Paciente, Atendimento, Presenca, Usuario, LogEntry, StatusPresenca, DiaSemana, Anotacao } from "@/types";
 import { diaSemanaDe } from "@/lib/format";
 
 let _func = [...mockFunc];
@@ -15,6 +16,8 @@ let _atd = [...mockAtd];
 let _pres = [...mockPres];
 let _usu = [...mockUsu];
 let _logs = [...mockLogs];
+let _anot = [...mockAnot];
+
 
 const delay = (ms = 120) => new Promise((r) => setTimeout(r, ms));
 const uid = () => Math.random().toString(36).slice(2, 10);

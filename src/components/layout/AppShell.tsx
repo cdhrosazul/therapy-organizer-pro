@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  NotebookPen,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -24,7 +25,9 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "id-badge": IdCard,
   shield: Shield,
   scroll: ScrollText,
+  "notebook-pen": NotebookPen,
 };
+
 
 export function AppShell() {
   const { session, signOut } = useAuth();

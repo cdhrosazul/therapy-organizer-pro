@@ -21,6 +21,7 @@ export function menusFor(perfil: Perfil): MenuItem[] {
         { to: "/agenda", label: "Agenda", icon: "calendar" },
         { to: "/checkin", label: "Check-in", icon: "check-circle" },
         { to: "/pacientes", label: "Pacientes", icon: "users" },
+        { to: "/anotacoes", label: "Anotações", icon: "notebook-pen" },
         { to: "/funcionarios", label: "Funcionários", icon: "id-badge" },
         { to: "/usuarios", label: "Usuários", icon: "shield" },
         { to: "/logs", label: "Logs", icon: "scroll" },
@@ -39,13 +40,16 @@ export function menusFor(perfil: Perfil): MenuItem[] {
         { to: "/checkin", label: "Check-in", icon: "check-circle" },
         { to: "/agenda", label: "Agenda", icon: "calendar" },
         { to: "/pacientes", label: "Pacientes", icon: "users" },
+        { to: "/anotacoes", label: "Anotações", icon: "notebook-pen" },
       ];
     case "terapeuta":
       return [
         { to: "/minha-agenda", label: "Minha Agenda", icon: "calendar" },
+        { to: "/anotacoes", label: "Anotações", icon: "notebook-pen" },
       ];
   }
 }
+
 
 export function homeFor(perfil: Perfil): string {
   if (perfil === "terapeuta") return "/minha-agenda";
