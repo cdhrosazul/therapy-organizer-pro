@@ -45,7 +45,7 @@ function PacientesList() {
         description="Cadastro centralizado, busca rápida por nome."
         actions={
           <button
-            onClick={() => navigate({ to: "/pacientes/novo" })}
+            onClick={() => navigate({ to: "/pacientes/$id", params: { id: "novo" } })}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="size-4" /> Novo paciente
