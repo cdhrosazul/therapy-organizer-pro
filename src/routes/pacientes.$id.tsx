@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getPaciente, listAtendimentos, removePaciente, savePaciente } from "@/services";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getPaciente, listAnotacoes, listAtendimentos, removeAnotacao, removePaciente, saveAnotacao, savePaciente } from "@/services";
 import { PageHeader } from "@/components/layout/AppShell";
 import { TerapiaScheduleModal } from "@/components/TerapiaScheduleModal";
-import type { Paciente, Especialidade } from "@/types";
+import { useAuth } from "@/lib/auth";
+import type { Anotacao, Paciente, Especialidade } from "@/types";
 import { convenios, especialidades } from "@/mocks/data";
-import { Upload, X, Save, ArrowLeft, CalendarClock, Trash2 } from "lucide-react";
+import { Upload, X, Save, ArrowLeft, CalendarClock, Trash2, Plus, Pencil } from "lucide-react";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +41,7 @@ function PacienteForm() {
   const qc = useQueryClient();
   const isNew = id === "novo";
   const [p, setP] = useState<Paciente>(empty);
-  const [tab, setTab] = useState<"dados" | "documentos">("dados");
+  const [tab, setTab] = useState<"dados" | "documentos" | "anotacoes">("dados");
   const [terapiaModal, setTerapiaModal] = useState<Especialidade | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
 
@@ -125,7 +127,7 @@ function PacienteForm() {
 
       <div className="rounded-2xl border bg-card">
         <div className="flex gap-1 border-b px-4 pt-3">
-          {(["dados", "documentos"] as const).map((t) => (
+          {(["dados", "documentos", "anotacoes"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -133,10 +135,11 @@ function PacienteForm() {
                 tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "dados" ? "Dados" : "Documentos"}
+              {t === "dados" ? "Dados" : t === "documentos" ? "Documentos" : "Anotações"}
             </button>
           ))}
         </div>
+
 
         {tab === "dados" && (
           <div className="p-6 grid md:grid-cols-2 gap-4">
@@ -199,7 +202,13 @@ function PacienteForm() {
             ))}
           </div>
         )}
+
+        {tab === "anotacoes" && !isNew && <AnotacoesSection pacienteId={p.id} />}
+        {tab === "anotacoes" && isNew && (
+          <div className="p-8 text-center text-sm text-muted-foreground">Salve o paciente antes de adicionar anotações.</div>
+        )}
       </div>
+
 
       {terapiaModal && !isNew && (
         <TerapiaScheduleModal
