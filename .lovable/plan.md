@@ -1,12 +1,52 @@
-## Causa da tela em branco
+# Plano: liberar 'Confirmar chegada' para o diretor
 
-A rota `src/routes/pacientes.novo.tsx` faz `<Navigate to="/pacientes/$id" params={{ id: "novo" }} />`. O TanStack Router considera o segmento literal `/pacientes/novo` mais específico que `/pacientes/$id`, então o `Navigate` cai de volta na mesma rota → loop infinito → React não renderiza nada → tela branca. O aviso de `postMessage` no console é do script do Lovable, não está relacionado.
+O botão não muda o status porque as inserções em `presencas` provavelmente falham por RLS, e os erros são engolidos sem feedback. Diretor (e demais perfis com acesso ao Check-in) precisa poder inserir/atualizar presenças.
 
-## Correção
+## 1. RLS de `presencas` (migration)
+Garantir que diretor, administrativo e recepcao possam ler, inserir e atualizar registros de presenca:
 
-1. **Apagar** `src/routes/pacientes.novo.tsx` (rota redundante que causa o loop).
-2. **Ajustar** `src/routes/pacientes.index.tsx`: trocar `navigate({ to: "/pacientes/novo" })` por `navigate({ to: "/pacientes/$id", params: { id: "novo" } })` no botão "Novo paciente".
+- Helper `public.tem_perfil(_user uuid, _perfis text[])` (SECURITY DEFINER) que consulta `profiles.perfil` para evitar recursão.
+- Em `public.presencas`:
+  - habilitar RLS (idempotente)
+  - policy SELECT: autenticado com perfil em (diretor, administrativo, recepcao, terapeuta)
+  - policy INSERT/UPDATE: autenticado com perfil em (diretor, administrativo, recepcao)
+- GRANTs em `presencas` para `authenticated` e `service_role`.
 
-A rota `pacientes.$id.tsx` já trata `id === "novo"` como cadastro novo (estado `empty`, sem `getPaciente`), então o formulário abre normalmente.
+## 2. Propagar erros no serviço (`src/services/index.ts`)
+Em `checkinPaciente`, capturar `error` de cada `update`/`insert` e dar `throw` — hoje são ignorados, escondendo erros de RLS.
 
-Sem mudanças em banco/SQL/serviços.
+## 3. Feedback no UI (`src/routes/checkin.tsx`)
+Envolver `handleCheckin` em `try/catch`:
+- sucesso: `toast.success(\`\${n} sessão(ões) confirmada(s)\`)`
+- erro: `toast.error(e.message)` (mostra o motivo real caso ainda haja problema de permissão)
+
+## Detalhes técnicos
+Migration (resumo):
+```sql
+create or replace function public.tem_perfil(_user uuid, _perfis text[])
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.profiles
+    where id = _user and ativo = true and perfil = any(_perfis)
+  )
+$$;
+
+alter table public.presencas enable row level security;
+drop policy if exists "presencas_select" on public.presencas;
+create policy "presencas_select" on public.presencas for select to authenticated
+  using (public.tem_perfil(auth.uid(),
+    array['diretor','administrativo','recepcao','terapeuta']));
+drop policy if exists "presencas_insert" on public.presencas;
+create policy "presencas_insert" on public.presencas for insert to authenticated
+  with check (public.tem_perfil(auth.uid(),
+    array['diretor','administrativo','recepcao']));
+drop policy if exists "presencas_update" on public.presencas;
+create policy "presencas_update" on public.presencas for update to authenticated
+  using (public.tem_perfil(auth.uid(),
+    array['diretor','administrativo','recepcao']));
+
+grant select, insert, update on public.presencas to authenticated;
+grant all on public.presencas to service_role;
+```
+
+Sem alterações em outras telas/permissões.
