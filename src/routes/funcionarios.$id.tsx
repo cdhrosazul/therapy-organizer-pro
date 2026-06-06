@@ -47,6 +47,7 @@ function FuncForm() {
   const isNew = id === "novo";
   const [f, setF] = useState<Funcionario>(empty);
   const [tab, setTab] = useState<"dados" | "documentos">("dados");
+  const [confirmDel, setConfirmDel] = useState(false);
 
   useEffect(() => {
     if (isNew) {
@@ -60,6 +61,12 @@ function FuncForm() {
     await saveFuncionario(f);
     navigate({ to: "/funcionarios" });
   }
+
+  async function handleDelete() {
+    await removeFuncionario(f.id);
+    navigate({ to: "/funcionarios" });
+  }
+
 
   function handleFiles(tipo: string, files: FileList | null) {
     if (!files) return;
