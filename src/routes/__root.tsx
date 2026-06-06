@@ -76,7 +76,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Centro de Desenvolvimento Humano Rosazul — Gestão Clínica Inte" },
+      { title: "Centro de Desenvolvimento Humano Rosazul — Nunes.tech" },
       { name: "description", content: "Sistema interno de gestão administrativa da clínica Centro de Desenvolvimento Humano Rosazul." },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
