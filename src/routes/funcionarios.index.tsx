@@ -1,9 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { listFuncionarios } from "@/services";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { listFuncionarios, removeFuncionario } from "@/services";
 import { PageHeader } from "@/components/layout/AppShell";
 import { formatBRL } from "@/lib/format";
-import { Plus, ChevronRight } from "lucide-react";
+import { Plus, ChevronRight, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/funcionarios/")({
   head: () => ({ meta: [{ title: "Funcionários — Centro de Desenv" }] }),
@@ -12,8 +23,21 @@ export const Route = createFileRoute("/funcionarios/")({
 
 function FuncList() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [confirm, setConfirm] = useState<{ id: string; nome: string } | null>(null);
   const q = useQuery({ queryKey: ["funcionarios"], queryFn: listFuncionarios });
   const lista = q.data ?? [];
+
+  const del = useMutation({
+    mutationFn: (id: string) => removeFuncionario(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["funcionarios"] });
+      qc.invalidateQueries({ queryKey: ["atendimentos"] });
+      qc.invalidateQueries({ queryKey: ["usuarios"] });
+      setConfirm(null);
+    },
+  });
+
   return (
     <div>
       <PageHeader
@@ -43,7 +67,7 @@ function FuncList() {
           </thead>
           <tbody className="divide-y">
             {lista.map((f) => (
-              <tr key={f.id} className="hover:bg-accent/40">
+              <tr key={f.id} className="group hover:bg-accent/40">
                 <td className="p-3">
                   <div className="flex items-center gap-3">
                     <div className="size-9 rounded-full bg-primary-soft text-primary flex items-center justify-center font-bold text-xs">
@@ -66,15 +90,45 @@ function FuncList() {
                   }`}>{f.status}</span>
                 </td>
                 <td className="p-3 text-right">
-                  <Link to="/funcionarios/$id" params={{ id: f.id }} className="text-primary text-sm font-medium hover:underline inline-flex items-center gap-1">
-                    Abrir <ChevronRight className="size-4" />
-                  </Link>
+                  <div className="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label={`Excluir ${f.nome}`}
+                      onClick={() => setConfirm({ id: f.id, nome: f.nome })}
+                      className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                    <Link to="/funcionarios/$id" params={{ id: f.id }} className="text-primary text-sm font-medium hover:underline inline-flex items-center gap-1">
+                      Abrir <ChevronRight className="size-4" />
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {confirm?.nome}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove o funcionário e todos os horários fixos em que ele é terapeuta. Não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirm && del.mutate(confirm.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
