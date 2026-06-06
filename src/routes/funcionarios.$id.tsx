@@ -19,7 +19,7 @@ import {
 
 
 export const Route = createFileRoute("/funcionarios/$id")({
-  head: () => ({ meta: [{ title: "Funcionário — Centro de Desenv" }] }),
+  head: () => ({ meta: [{ title: "Funcionário — Centro de Desenvolvimento Humano Rosazul" }] }),
   component: FuncForm,
 });
 

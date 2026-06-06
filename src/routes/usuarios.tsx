@@ -8,7 +8,7 @@ import type { Perfil, Usuario } from "@/types";
 import { Plus, KeyRound, X } from "lucide-react";
 
 export const Route = createFileRoute("/usuarios")({
-  head: () => ({ meta: [{ title: "Usuários — Centro de Desenv" }] }),
+  head: () => ({ meta: [{ title: "Usuários — Centro de Desenvolvimento Humano Rosazul" }] }),
   component: UsuariosPage,
 });
 
