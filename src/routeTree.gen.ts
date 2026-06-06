@@ -15,6 +15,7 @@ import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CheckinRouteImport } from './routes/checkin'
+import { Route as AnotacoesRouteImport } from './routes/anotacoes'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PacientesIndexRouteImport } from './routes/pacientes.index'
@@ -51,6 +52,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const CheckinRoute = CheckinRouteImport.update({
   id: '/checkin',
   path: '/checkin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnotacoesRoute = AnotacoesRouteImport.update({
+  id: '/anotacoes',
+  path: '/anotacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgendaRoute = AgendaRouteImport.update({
@@ -92,6 +98,7 @@ const FuncionariosIdRoute = FuncionariosIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
+  '/anotacoes': typeof AnotacoesRoute
   '/checkin': typeof CheckinRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
+  '/anotacoes': typeof AnotacoesRoute
   '/checkin': typeof CheckinRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
+  '/anotacoes': typeof AnotacoesRoute
   '/checkin': typeof CheckinRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/agenda'
+    | '/anotacoes'
     | '/checkin'
     | '/dashboard'
     | '/login'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/agenda'
+    | '/anotacoes'
     | '/checkin'
     | '/dashboard'
     | '/login'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/agenda'
+    | '/anotacoes'
     | '/checkin'
     | '/dashboard'
     | '/login'
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgendaRoute: typeof AgendaRoute
+  AnotacoesRoute: typeof AnotacoesRoute
   CheckinRoute: typeof CheckinRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
@@ -243,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckinRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/anotacoes': {
+      id: '/anotacoes'
+      path: '/anotacoes'
+      fullPath: '/anotacoes'
+      preLoaderRoute: typeof AnotacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/agenda': {
       id: '/agenda'
       path: '/agenda'
@@ -298,6 +318,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendaRoute: AgendaRoute,
+  AnotacoesRoute: AnotacoesRoute,
   CheckinRoute: CheckinRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
@@ -313,3 +334,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
