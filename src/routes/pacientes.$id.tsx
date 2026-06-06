@@ -334,14 +334,14 @@ function AnotacoesSection({ pacienteId }: { pacienteId: string }) {
     },
   });
   const delMut = useMutation({
-    mutationFn: (id: string) => removeAnotacao(id, session?.usuario ?? "admin"),
+    mutationFn: (id: string) => removeAnotacao(id),
     onSuccess: () => {
       setConfirmDel(null);
       inv();
     },
   });
 
-  const podeEditar = (n: Anotacao) => podeEditarTodas || n.autor === session?.usuario;
+  const podeEditar = (n: Anotacao) => podeEditarTodas || n.autor === session?.userId;
   const lista = data ?? [];
 
   return (

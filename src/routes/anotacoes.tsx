@@ -65,7 +65,7 @@ function AnotacoesPage() {
     },
   });
   const delMut = useMutation({
-    mutationFn: (id: string) => removeAnotacao(id, session?.usuario ?? "admin"),
+    mutationFn: (id: string) => removeAnotacao(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["anotacoes"] });
       setConfirmDel(null);
@@ -79,7 +79,7 @@ function AnotacoesPage() {
   });
 
   const pacNome = (id: string) => pacientesVisiveis.find((p) => p.id === id)?.nome ?? "—";
-  const podeEditar = (n: Anotacao) => podeEditarTodas || n.autor === session?.usuario;
+  const podeEditar = (n: Anotacao) => podeEditarTodas || n.autor === session?.userId;
 
   return (
     <div>
