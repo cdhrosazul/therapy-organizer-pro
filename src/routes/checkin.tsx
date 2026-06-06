@@ -22,6 +22,8 @@ function CheckinPage() {
   const [termo, setTermo] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const qc = useQueryClient();
+  const { session } = useAuth();
+  const podeConfirmar = session?.perfil === "recepcao";
 
   const pacQuery = useQuery({ queryKey: ["pacientes:buscar", termo], queryFn: () => buscarPacientes(termo) });
   const atQuery = useQuery({ queryKey: ["atendimentos", diaSemana], queryFn: () => listAtendimentos({ diaSemana }) });
