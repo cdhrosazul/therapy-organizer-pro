@@ -1,26 +1,50 @@
-## Excluir funcionário
+## Aba "Anotações" (por paciente)
 
-Replicar o padrão já usado em pacientes para funcionários, com confirmação e limpeza em cascata.
+Sistema de anotações vinculadas a pacientes, com aba global listando todas e edição também dentro da ficha do paciente.
 
-### Onde aparece
-- **Lista `/funcionarios`**: ícone de lixeira no canto direito de cada linha (ao lado do "Abrir"), visível no hover. Abre `AlertDialog`: "Excluir [Nome]? Esta ação remove o funcionário e todos os horários fixos em que ele é terapeuta."
-- **Ficha `/funcionarios/$id`** (modo edição): botão "Excluir" (variante destrutiva) no header, ao lado do "Salvar". Mesma confirmação. Após excluir, navega para `/funcionarios`.
+### Acesso por perfil
+- Visível no menu lateral para: **Diretor, Terapeuta, Recepção**
+- Oculto para: Administrativo
+- Terapeuta vê apenas anotações dos pacientes que atende (filtro por `terapeutaId` nos atendimentos fixos).
+- Diretor e Recepção veem todas.
 
-### O que a exclusão faz (cascata em `services`)
-1. Remove todos os `Atendimento` em que `terapeutaId === id`.
-2. Remove as `Presenca` órfãs (cujo `atendimentoId` foi apagado).
-3. Remove o funcionário.
-4. Opcional/seguro: também remove o `Usuario` vinculado (`usuario.funcionarioId === id`), já que perderia sentido.
-5. Registra log: "Funcionário excluído — [Nome] (N sessões fixas removidas)".
+### Tela global `/anotacoes`
+- Lista de anotações (mais recentes primeiro) com: paciente, autor, data, trecho do texto.
+- Filtro por paciente (combobox) e busca textual.
+- Botão "Nova anotação" → modal com seleção de paciente + textarea.
+- Clicar em uma anotação abre modal de edição (autor original ou Diretor pode editar/excluir).
 
-### Mudanças
-- `src/services/index.ts`: nova função `removeFuncionario(id, usuario)` com a cascata acima.
-- `src/routes/funcionarios.index.tsx`: botão lixeira por linha + `AlertDialog` + `useMutation` + invalidação de `["funcionarios"]`.
-- `src/routes/funcionarios.$id.tsx`: botão "Excluir" no header (só quando `!isNew`) + `AlertDialog` + navegação após sucesso.
+### Na ficha do paciente `/pacientes/$id`
+- Nova seção "Anotações" abaixo dos dados, listando as anotações daquele paciente.
+- Campo rápido para adicionar nova anotação.
+- Cada item mostra autor + data + texto, com ações editar/excluir conforme permissão.
+
+### Modelo de dados (mock em memória, padrão do projeto)
+Novo tipo em `src/types/index.ts`:
+```ts
+interface Anotacao {
+  id: string;
+  pacienteId: string;
+  autor: string;     // usuario.usuario do logado
+  autorNome: string;
+  data: string;      // ISO
+  texto: string;
+}
+```
+Mock inicial em `src/mocks/data.ts` (algumas amostras).
+
+### Serviços (`src/services/index.ts`)
+- `listAnotacoes(filtro?: { pacienteId?, terapeutaId? })`
+- `saveAnotacao(a, usuario)` (cria/edita + log)
+- `removeAnotacao(id, usuario)` (+ log)
+- `removePaciente` já existente: passa a remover também as anotações do paciente.
+
+### Rotas e navegação
+- Novo arquivo `src/routes/anotacoes.tsx`.
+- `src/lib/permissions.ts`: adicionar item `{ to: "/anotacoes", label: "Anotações", icon: "notebook-pen" }` em `diretor`, `terapeuta` e `recepcao`.
+- `AppShell.tsx`: mapear o ícone novo (lucide `NotebookPen`).
 
 ### Fora de escopo
-- Soft delete / restauração.
-- Reatribuição automática de sessões a outro terapeuta (são removidas).
-- Exclusão em massa.
-
-Confirma para eu implementar?
+- Anexos em anotações.
+- Anotações privadas/visibilidade granular além do filtro por perfil acima.
+- Histórico de edições.
