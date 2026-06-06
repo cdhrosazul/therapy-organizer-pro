@@ -121,7 +121,7 @@ function SidebarContent({
           <p className="text-[10px] font-bold leading-tight whitespace-pre-line">
             {"Centro de Desenvolvimento\nHumano Rosazul"}
           </p>
-          <p className="text-xs text-muted-foreground">Gestão Clínica Inte</p>
+          <p className="text-xs text-muted-foreground">Nunes.tech</p>
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto p-3">
@@ -145,7 +145,7 @@ function SidebarContent({
         </ul>
       </nav>
       <div className="p-4 text-[11px] text-muted-foreground border-t border-sidebar-border">
-        v1.0 · Front-end demo
+        v1.0
       </div>
     </>
   );
