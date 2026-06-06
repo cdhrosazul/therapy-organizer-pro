@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import type { StatusPresenca } from "@/types";
 import { Search, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/checkin")({
   head: () => ({ meta: [{ title: "Check-in — Centro de Desenvolvimento Humano Rosazul" }] }),
