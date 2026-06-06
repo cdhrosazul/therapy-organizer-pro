@@ -75,6 +75,18 @@ export async function savePaciente(p: Paciente, usuario = "admin") {
   return p;
 }
 
+export async function removeFuncionario(id: string, usuario = "admin") {
+  await delay();
+  const func = _func.find((f) => f.id === id);
+  const sessoes = _atd.filter((a) => a.terapeutaId === id);
+  const sessoesIds = new Set(sessoes.map((s) => s.id));
+  _atd = _atd.filter((a) => a.terapeutaId !== id);
+  _pres = _pres.filter((p) => !sessoesIds.has(p.atendimentoId));
+  _usu = _usu.filter((u) => u.funcionarioId !== id);
+  _func = _func.filter((f) => f.id !== id);
+  pushLog(usuario, "Funcionário excluído", `${func?.nome ?? id} (${sessoes.length} sessões fixas removidas)`);
+}
+
 export async function removePaciente(id: string, usuario = "admin") {
   await delay();
   const pac = _pac.find((p) => p.id === id);
