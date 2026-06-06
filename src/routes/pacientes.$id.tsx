@@ -341,7 +341,7 @@ function AnotacoesSection({ pacienteId }: { pacienteId: string }) {
     },
   });
 
-  const podeEditar = (n: Anotacao) => podeEditarTodas || n.autor === session?.usuario;
+  const podeEditar = (n: Anotacao) => podeEditarTodas || n.autor === session?.userId;
   const lista = data ?? [];
 
   return (
