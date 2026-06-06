@@ -84,3 +84,13 @@ export interface LogEntry {
   acao: string;
   detalhe: string;
 }
+
+export interface Anotacao {
+  id: string;
+  pacienteId: string;
+  autor: string;
+  autorNome: string;
+  data: string;
+  texto: string;
+}
+

@@ -1,4 +1,4 @@
-import type { Funcionario, Paciente, Atendimento, Presenca, Usuario, LogEntry, Especialidade } from "@/types";
+import type { Funcionario, Paciente, Atendimento, Presenca, Usuario, LogEntry, Especialidade, Anotacao } from "@/types";
 
 export const especialidades: Especialidade[] = [
   "Psicologia",
@@ -201,3 +201,10 @@ export const logs: LogEntry[] = [
   { id: "l4", data: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), usuario: "admin", acao: "Cadastro alterado", detalhe: "Paciente Sofia Mendes" },
   { id: "l5", data: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), usuario: "diretor", acao: "Senha redefinida", detalhe: "Usuário ana.psi" },
 ];
+
+export const anotacoes: Anotacao[] = [
+  { id: "n1", pacienteId: "p1", autor: "ana.psi", autorNome: "Ana Carolina (Psicologia)", data: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), texto: "Boa evolução na sessão de hoje. Demonstrou maior engajamento nas atividades lúdicas." },
+  { id: "n2", pacienteId: "p4", autor: "ana.psi", autorNome: "Ana Carolina (Psicologia)", data: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), texto: "Mãe relatou melhora no sono. Manter abordagem atual." },
+  { id: "n3", pacienteId: "p1", autor: "recepcao", autorNome: "Recepção 1", data: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), texto: "Responsável solicitou remarcação da sessão de sexta." },
+];
+

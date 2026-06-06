@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getPaciente, listAtendimentos, removePaciente, savePaciente } from "@/services";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getPaciente, listAnotacoes, listAtendimentos, removeAnotacao, removePaciente, saveAnotacao, savePaciente } from "@/services";
 import { PageHeader } from "@/components/layout/AppShell";
 import { TerapiaScheduleModal } from "@/components/TerapiaScheduleModal";
-import type { Paciente, Especialidade } from "@/types";
+import { useAuth } from "@/lib/auth";
+import type { Anotacao, Paciente, Especialidade } from "@/types";
 import { convenios, especialidades } from "@/mocks/data";
-import { Upload, X, Save, ArrowLeft, CalendarClock, Trash2 } from "lucide-react";
+import { Upload, X, Save, ArrowLeft, CalendarClock, Trash2, Plus, Pencil } from "lucide-react";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +41,7 @@ function PacienteForm() {
   const qc = useQueryClient();
   const isNew = id === "novo";
   const [p, setP] = useState<Paciente>(empty);
-  const [tab, setTab] = useState<"dados" | "documentos">("dados");
+  const [tab, setTab] = useState<"dados" | "documentos" | "anotacoes">("dados");
   const [terapiaModal, setTerapiaModal] = useState<Especialidade | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
 
@@ -125,7 +127,7 @@ function PacienteForm() {
 
       <div className="rounded-2xl border bg-card">
         <div className="flex gap-1 border-b px-4 pt-3">
-          {(["dados", "documentos"] as const).map((t) => (
+          {(["dados", "documentos", "anotacoes"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -133,10 +135,11 @@ function PacienteForm() {
                 tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "dados" ? "Dados" : "Documentos"}
+              {t === "dados" ? "Dados" : t === "documentos" ? "Documentos" : "Anotações"}
             </button>
           ))}
         </div>
+
 
         {tab === "dados" && (
           <div className="p-6 grid md:grid-cols-2 gap-4">
@@ -199,7 +202,13 @@ function PacienteForm() {
             ))}
           </div>
         )}
+
+        {tab === "anotacoes" && !isNew && <AnotacoesSection pacienteId={p.id} />}
+        {tab === "anotacoes" && isNew && (
+          <div className="p-8 text-center text-sm text-muted-foreground">Salve o paciente antes de adicionar anotações.</div>
+        )}
       </div>
+
 
       {terapiaModal && !isNew && (
         <TerapiaScheduleModal
@@ -284,6 +293,138 @@ function DocSection({ tipo, docs, onUpload, onRemove }: { tipo: string; docs: { 
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function AnotacoesSection({ pacienteId }: { pacienteId: string }) {
+  const { session } = useAuth();
+  const qc = useQueryClient();
+  const podeEditarTodas = session?.perfil === "diretor";
+  const { data } = useQuery({
+    queryKey: ["anotacoes:paciente", pacienteId],
+    queryFn: () => listAnotacoes({ pacienteId }),
+  });
+  const [texto, setTexto] = useState("");
+  const [editing, setEditing] = useState<Anotacao | null>(null);
+  const [confirmDel, setConfirmDel] = useState<Anotacao | null>(null);
+
+  const inv = () => {
+    qc.invalidateQueries({ queryKey: ["anotacoes:paciente", pacienteId] });
+    qc.invalidateQueries({ queryKey: ["anotacoes"] });
+  };
+
+  const addMut = useMutation({
+    mutationFn: () =>
+      saveAnotacao(
+        { id: "", pacienteId, autor: "", autorNome: "", data: "", texto: texto.trim() },
+        session?.usuario ?? "admin",
+        session?.nome ?? "—",
+      ),
+    onSuccess: () => {
+      setTexto("");
+      inv();
+    },
+  });
+  const editMut = useMutation({
+    mutationFn: (a: Anotacao) => saveAnotacao(a, session?.usuario ?? "admin", session?.nome ?? "—"),
+    onSuccess: () => {
+      setEditing(null);
+      inv();
+    },
+  });
+  const delMut = useMutation({
+    mutationFn: (id: string) => removeAnotacao(id, session?.usuario ?? "admin"),
+    onSuccess: () => {
+      setConfirmDel(null);
+      inv();
+    },
+  });
+
+  const podeEditar = (n: Anotacao) => podeEditarTodas || n.autor === session?.usuario;
+  const lista = data ?? [];
+
+  return (
+    <div className="p-6 space-y-4">
+      <div className="rounded-lg border bg-background p-3">
+        <textarea
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          rows={3}
+          placeholder="Nova anotação..."
+          className="w-full rounded-md border bg-card p-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+        />
+        <div className="mt-2 flex justify-end">
+          <button
+            onClick={() => addMut.mutate()}
+            disabled={!texto.trim() || addMut.isPending}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          >
+            <Plus className="size-4" /> Adicionar
+          </button>
+        </div>
+      </div>
+
+      {lista.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-6">Nenhuma anotação ainda.</p>
+      ) : (
+        <ul className="space-y-2">
+          {lista.map((n) => (
+            <li key={n.id} className="rounded-lg border p-3 group">
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <p className="text-xs text-muted-foreground">
+                  {n.autorNome} · {new Date(n.data).toLocaleString("pt-BR")}
+                </p>
+                {podeEditar(n) && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setEditing(n)} className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"><Pencil className="size-3.5" /></button>
+                    <button onClick={() => setConfirmDel(n)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="size-3.5" /></button>
+                  </div>
+                )}
+              </div>
+              {editing?.id === n.id ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={editing.texto}
+                    onChange={(e) => setEditing({ ...editing, texto: e.target.value })}
+                    rows={3}
+                    className="w-full rounded-md border bg-card p-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => setEditing(null)} className="rounded-md border px-3 py-1 text-xs hover:bg-accent">Cancelar</button>
+                    <button
+                      onClick={() => editing.texto.trim() && editMut.mutate({ ...editing, texto: editing.texto.trim() })}
+                      className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                    >
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm whitespace-pre-wrap">{n.texto}</p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <AlertDialog open={!!confirmDel} onOpenChange={(o) => !o && setConfirmDel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir anotação?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmDel && delMut.mutate(confirmDel.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

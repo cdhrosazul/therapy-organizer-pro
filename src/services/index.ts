@@ -5,8 +5,9 @@ import {
   presencas as mockPres,
   usuarios as mockUsu,
   logs as mockLogs,
+  anotacoes as mockAnot,
 } from "@/mocks/data";
-import type { Funcionario, Paciente, Atendimento, Presenca, Usuario, LogEntry, StatusPresenca, DiaSemana } from "@/types";
+import type { Funcionario, Paciente, Atendimento, Presenca, Usuario, LogEntry, StatusPresenca, DiaSemana, Anotacao } from "@/types";
 import { diaSemanaDe } from "@/lib/format";
 
 let _func = [...mockFunc];
@@ -15,6 +16,8 @@ let _atd = [...mockAtd];
 let _pres = [...mockPres];
 let _usu = [...mockUsu];
 let _logs = [...mockLogs];
+let _anot = [...mockAnot];
+
 
 const delay = (ms = 120) => new Promise((r) => setTimeout(r, ms));
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -94,9 +97,45 @@ export async function removePaciente(id: string, usuario = "admin") {
   const sessoesIds = new Set(sessoes.map((s) => s.id));
   _atd = _atd.filter((a) => a.pacienteId !== id);
   _pres = _pres.filter((p) => !sessoesIds.has(p.atendimentoId));
+  _anot = _anot.filter((n) => n.pacienteId !== id);
   _pac = _pac.filter((p) => p.id !== id);
   pushLog(usuario, "Paciente excluído", `${pac?.nome ?? id} (${sessoes.length} sessões fixas removidas)`);
 }
+
+// Anotações
+export async function listAnotacoes(filtro?: { pacienteId?: string; pacienteIds?: string[] }): Promise<Anotacao[]> {
+  await delay();
+  let list = _anot;
+  if (filtro?.pacienteId) list = list.filter((n) => n.pacienteId === filtro.pacienteId);
+  if (filtro?.pacienteIds) {
+    const set = new Set(filtro.pacienteIds);
+    list = list.filter((n) => set.has(n.pacienteId));
+  }
+  return [...list].sort((a, b) => b.data.localeCompare(a.data));
+}
+export async function saveAnotacao(a: Anotacao, usuario = "admin", autorNome = "—") {
+  await delay();
+  const exists = _anot.find((x) => x.id === a.id);
+  if (exists) {
+    _anot = _anot.map((x) => (x.id === a.id ? { ...a } : x));
+    pushLog(usuario, "Anotação alterada", `Paciente ${_pac.find((p) => p.id === a.pacienteId)?.nome ?? a.pacienteId}`);
+  } else {
+    a.id = a.id || uid();
+    a.data = a.data || new Date().toISOString();
+    a.autor = a.autor || usuario;
+    a.autorNome = a.autorNome || autorNome;
+    _anot = [a, ..._anot];
+    pushLog(usuario, "Anotação criada", `Paciente ${_pac.find((p) => p.id === a.pacienteId)?.nome ?? a.pacienteId}`);
+  }
+  return a;
+}
+export async function removeAnotacao(id: string, usuario = "admin") {
+  await delay();
+  const n = _anot.find((x) => x.id === id);
+  _anot = _anot.filter((x) => x.id !== id);
+  if (n) pushLog(usuario, "Anotação removida", `Paciente ${_pac.find((p) => p.id === n.pacienteId)?.nome ?? n.pacienteId}`);
+}
+
 
 // Atendimentos (grade fixa semanal)
 export async function listAtendimentos(filtro?: { diaSemana?: DiaSemana; terapeutaId?: string; pacienteId?: string }): Promise<Atendimento[]> {
