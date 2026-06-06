@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import type { StatusPresenca } from "@/types";
 import { Search, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/checkin")({
   head: () => ({ meta: [{ title: "Check-in — Centro de Desenvolvimento Humano Rosazul" }] }),
@@ -21,6 +22,8 @@ function CheckinPage() {
   const [termo, setTermo] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const qc = useQueryClient();
+  const { session } = useAuth();
+  const podeConfirmar = session?.perfil === "recepcao";
 
   const pacQuery = useQuery({ queryKey: ["pacientes:buscar", termo], queryFn: () => buscarPacientes(termo) });
   const atQuery = useQuery({ queryKey: ["atendimentos", diaSemana], queryFn: () => listAtendimentos({ diaSemana }) });
@@ -114,12 +117,13 @@ function CheckinPage() {
                   <p className="text-sm text-muted-foreground">{selecionado.convenio} · {selecionado.telefone}</p>
                 </div>
                 <button
-                  disabled={jaPresente || sessoes.length === 0}
+                  disabled={!podeConfirmar || jaPresente || sessoes.length === 0}
                   onClick={handleCheckin}
+                  title={!podeConfirmar ? "Apenas o perfil Recepção pode confirmar chegada" : undefined}
                   className="inline-flex items-center gap-2 h-12 px-6 rounded-xl bg-success text-success-foreground font-semibold hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <CheckCircle2 className="size-5" />
-                  {jaPresente ? "Já presente" : "Confirmar chegada"}
+                  {jaPresente ? "Já presente" : !podeConfirmar ? "Apenas recepção" : "Confirmar chegada"}
                 </button>
               </div>
 
