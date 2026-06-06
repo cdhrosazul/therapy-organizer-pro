@@ -65,7 +65,7 @@ function AnotacoesPage() {
     },
   });
   const delMut = useMutation({
-    mutationFn: (id: string) => removeAnotacao(id, session?.usuario ?? "admin"),
+    mutationFn: (id: string) => removeAnotacao(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["anotacoes"] });
       setConfirmDel(null);

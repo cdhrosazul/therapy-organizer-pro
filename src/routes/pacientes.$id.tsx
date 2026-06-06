@@ -334,7 +334,7 @@ function AnotacoesSection({ pacienteId }: { pacienteId: string }) {
     },
   });
   const delMut = useMutation({
-    mutationFn: (id: string) => removeAnotacao(id, session?.usuario ?? "admin"),
+    mutationFn: (id: string) => removeAnotacao(id),
     onSuccess: () => {
       setConfirmDel(null);
       inv();
