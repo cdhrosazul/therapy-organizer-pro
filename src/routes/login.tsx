@@ -1,35 +1,44 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { homeFor, PERFIL_LABEL } from "@/lib/permissions";
-import type { Perfil } from "@/types";
+import { homeFor } from "@/lib/permissions";
 import logo from "@/assets/rosazul-logo.jpg.asset.json";
-import { LogIn } from "lucide-react";
+import { LogIn, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Entrar — Centro de Desenvolvimento Humano Rosazul" }] }),
   component: LoginPage,
 });
 
-const perfis: { perfil: Perfil; nome: string; usuario: string; funcionarioId?: string }[] = [
-  { perfil: "diretor", nome: "Carlos Diretor", usuario: "diretor" },
-  { perfil: "administrativo", nome: "Beatriz Administrativo", usuario: "admin", funcionarioId: "f6" },
-  { perfil: "recepcao", nome: "Recepção", usuario: "recepcao", funcionarioId: "f6" },
-  { perfil: "terapeuta", nome: "Ana Carolina (Psicologia)", usuario: "ana.psi", funcionarioId: "f1" },
-];
-
 function LoginPage() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
-  const [usuario, setUsuario] = useState("diretor");
-  const [senha, setSenha] = useState("demo");
-  const [perfil, setPerfil] = useState<Perfil>("diretor");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    const dados = perfis.find((p) => p.perfil === perfil)!;
-    signIn({ perfil: dados.perfil, nome: dados.nome, usuario: dados.usuario, funcionarioId: dados.funcionarioId });
-    navigate({ to: homeFor(dados.perfil) });
+    setErro(null);
+    setLoading(true);
+    const { error } = await signIn(email.trim(), senha);
+    setLoading(false);
+    if (error) {
+      setErro(error);
+      return;
+    }
+    // Após signIn, buscar perfil para redirecionar
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return;
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("perfil")
+      .eq("id", data.user.id)
+      .maybeSingle();
+    const perfil = (prof?.perfil ?? "administrativo") as Parameters<typeof homeFor>[0];
+    navigate({ to: homeFor(perfil) });
   }
 
   return (
@@ -64,15 +73,18 @@ function LoginPage() {
           </div>
           <h1 className="text-2xl font-bold mb-1">Entrar no sistema</h1>
           <p className="text-sm text-muted-foreground mb-6">
-            Selecione um perfil de demonstração para acessar.
+            Acesse com seu email e senha.
           </p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Usuário</label>
+              <label className="text-sm font-medium mb-1.5 block">Email</label>
               <input
-                value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full h-11 rounded-lg border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
@@ -80,46 +92,27 @@ function LoginPage() {
               <label className="text-sm font-medium mb-1.5 block">Senha</label>
               <input
                 type="password"
+                autoComplete="current-password"
+                required
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 className="w-full h-11 rounded-lg border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Perfil de demonstração</label>
-              <div className="grid grid-cols-2 gap-2">
-                {(["diretor", "administrativo", "recepcao", "terapeuta"] as Perfil[]).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => {
-                      setPerfil(p);
-                      const dados = perfis.find((x) => x.perfil === p)!;
-                      setUsuario(dados.usuario);
-                    }}
-                    className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
-                      perfil === p
-                        ? "border-primary bg-primary-soft text-primary"
-                        : "border-border hover:bg-accent"
-                    }`}
-                  >
-                    {PERFIL_LABEL[p]}
-                  </button>
-                ))}
+            {erro && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {erro}
               </div>
-            </div>
+            )}
 
             <button
               type="submit"
-              className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
+              disabled={loading}
+              className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
             >
-              <LogIn className="size-4" /> Entrar
+              {loading ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />} Entrar
             </button>
-
-            <p className="text-xs text-muted-foreground text-center">
-              Demonstração — qualquer senha funciona.
-            </p>
           </form>
         </div>
       </div>
