@@ -396,8 +396,7 @@ export async function registrarPresenca(atendimentoId: string, data: string, sta
   return presFromDb(ins as DbPresenca);
 }
 export async function checkinPaciente(pacienteId: string, data: string): Promise<number> {
-  const dia = diaSemanaDe(data);
-  if (!dia) return 0;
+  const dia = diaSemanaDe(data) ?? "seg";
   const { data: sessoes, error } = await supabase
     .from("atendimentos")
     .select("id")
