@@ -1,0 +1,1 @@
+const a=["Psicologia","Psicopedagogia","Fisioterapia","Fonoaudiologia","Terapia Ocupacional","Psicomotricidade","Musicoterapia"],i=["Particular","Unimed","Bradesco Saúde","Amil","SulAmérica","Hapvida"];export{i as c,a as e};
