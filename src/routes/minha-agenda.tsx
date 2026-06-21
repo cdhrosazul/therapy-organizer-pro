@@ -14,7 +14,10 @@ export const Route = createFileRoute("/minha-agenda")({
 
 function MinhaAgenda() {
   const { session } = useAuth();
-  const [diaSemana, setDiaSemana] = useState<DiaSemana>(diaSemanaHoje());
+  const [diaSemana, setDiaSemana] = useState<DiaSemana>(() => {
+    const hoje = diaSemanaHoje();
+    return hoje === "sab" || hoje === "dom" ? "seg" : hoje;
+  });
   const at = useQuery({
     queryKey: ["atendimentos", diaSemana, session?.funcionarioId],
     queryFn: () => listAtendimentos({ diaSemana, terapeutaId: session?.funcionarioId }),

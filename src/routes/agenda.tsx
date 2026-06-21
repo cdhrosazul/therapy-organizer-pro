@@ -9,7 +9,7 @@ import {
   removeAtendimento,
 } from "@/services";
 import type { Atendimento, DiaSemana, Especialidade } from "@/types";
-import { slotsHorarios, DIAS_SEMANA, diaSemanaHoje } from "@/lib/format";
+import { slotsHorarios, DIAS_SEMANA, diaSemanaHoje, DIAS_SEMANA_LOOKUP } from "@/lib/format";
 import { PageHeader } from "@/components/layout/AppShell";
 import { useAuth } from "@/lib/auth";
 import { podeEditarAgenda } from "@/lib/permissions";
@@ -24,7 +24,10 @@ export const Route = createFileRoute("/agenda")({
 function AgendaPage() {
   const { session } = useAuth();
   const podeEditar = session ? podeEditarAgenda(session.perfil) : false;
-  const [diaSemana, setDiaSemana] = useState<DiaSemana>(diaSemanaHoje());
+  const [diaSemana, setDiaSemana] = useState<DiaSemana>(() => {
+    const hoje = diaSemanaHoje();
+    return hoje === "sab" || hoje === "dom" ? "seg" : hoje;
+  });
   const qc = useQueryClient();
 
   const atQuery = useQuery({ queryKey: ["atendimentos", diaSemana], queryFn: () => listAtendimentos({ diaSemana }) });
@@ -162,7 +165,7 @@ function AppointmentModal({
 }) {
   const [pacienteId, setPacienteId] = useState(editar?.pacienteId ?? "");
   const [terapia, setTerapia] = useState<Especialidade>(editar?.terapia ?? especialidades[0]);
-  const diaLabel = DIAS_SEMANA.find((d) => d.value === diaSemana)?.label ?? "";
+  const diaLabel = DIAS_SEMANA_LOOKUP[diaSemana]?.label ?? "";
 
   async function handleSave() {
     if (!pacienteId) return;

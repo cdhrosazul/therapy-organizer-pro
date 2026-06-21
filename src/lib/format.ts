@@ -39,7 +39,10 @@ export function slotsHorarios(): string[] {
 
 export function hojeISO(): string {
   const d = new Date();
-  return d.toISOString().slice(0, 10);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 import type { DiaSemana } from "@/types";
@@ -52,10 +55,29 @@ export const DIAS_SEMANA: { value: DiaSemana; label: string; labelCurto: string 
   { value: "sex", label: "Sexta-feira", labelCurto: "Sexta" },
 ];
 
+export const DIAS_SEMANA_LOOKUP: Record<DiaSemana, { label: string; labelCurto: string }> = {
+  seg: { label: "Segunda-feira", labelCurto: "Segunda" },
+  ter: { label: "Terça-feira", labelCurto: "Terça" },
+  qua: { label: "Quarta-feira", labelCurto: "Quarta" },
+  qui: { label: "Quinta-feira", labelCurto: "Quinta" },
+  sex: { label: "Sexta-feira", labelCurto: "Sexta" },
+  sab: { label: "Sábado", labelCurto: "Sábado" },
+  dom: { label: "Domingo", labelCurto: "Domingo" },
+};
+
 export function diaSemanaDe(iso: string): DiaSemana | null {
+  if (!iso) return null;
   const d = new Date(iso + "T12:00:00");
   const idx = d.getDay(); // 0=dom .. 6=sab
-  const map: Record<number, DiaSemana | null> = { 0: null, 1: "seg", 2: "ter", 3: "qua", 4: "qui", 5: "sex", 6: null };
+  const map: Record<number, DiaSemana> = {
+    0: "dom",
+    1: "seg",
+    2: "ter",
+    3: "qua",
+    4: "qui",
+    5: "sex",
+    6: "sab",
+  };
   return map[idx];
 }
 

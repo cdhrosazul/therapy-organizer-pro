@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { listAtendimentos, listPacientes, listFuncionarios, listPresencas } from "@/services";
-import { hojeISO, diaSemanaHoje, DIAS_SEMANA } from "@/lib/format";
+import { hojeISO, diaSemanaHoje, DIAS_SEMANA_LOOKUP } from "@/lib/format";
 import { PageHeader } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { StatusPresenca } from "@/types";
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/dashboard")({
 function Dashboard() {
   const data = hojeISO();
   const dia = diaSemanaHoje();
-  const diaLabel = DIAS_SEMANA.find((d) => d.value === dia)?.label ?? "";
+  const diaLabel = DIAS_SEMANA_LOOKUP[dia]?.label ?? "";
   const atQuery = useQuery({ queryKey: ["atendimentos", dia], queryFn: () => listAtendimentos({ diaSemana: dia }) });
   const pacQuery = useQuery({ queryKey: ["pacientes"], queryFn: listPacientes });
   const funcQuery = useQuery({ queryKey: ["funcionarios"], queryFn: listFuncionarios });

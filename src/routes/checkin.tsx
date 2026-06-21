@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { buscarPacientes, checkinPaciente, listAtendimentos, listFuncionarios, listPresencas } from "@/services";
-import { hojeISO, diaSemanaHoje, DIAS_SEMANA } from "@/lib/format";
+import { hojeISO, diaSemanaHoje, DIAS_SEMANA_LOOKUP } from "@/lib/format";
 import { PageHeader } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { StatusPresenca } from "@/types";
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/checkin")({
 function CheckinPage() {
   const data = hojeISO();
   const diaSemana = diaSemanaHoje();
-  const diaLabel = DIAS_SEMANA.find((d) => d.value === diaSemana)?.label ?? "";
+  const diaLabel = DIAS_SEMANA_LOOKUP[diaSemana]?.label ?? "";
   const [termo, setTermo] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const qc = useQueryClient();

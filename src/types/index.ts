@@ -9,7 +9,7 @@ export type Especialidade =
   | "Psicomotricidade"
   | "Musicoterapia";
 
-export type DiaSemana = "seg" | "ter" | "qua" | "qui" | "sex";
+export type DiaSemana = "seg" | "ter" | "qua" | "qui" | "sex" | "sab" | "dom";
 
 export interface Usuario {
   id: string;
