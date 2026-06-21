@@ -38,3 +38,6 @@ dist-ssr
 
 # Project scripts with secrets
 get-project.mjs
+
+# Vercel build output
+.vercel/
