@@ -1,46 +1,14 @@
-## Corrigir migration de RLS de `presencas`
+## Objetivo
+Promover o usuário `m.sedeque59@gmail.com` ao perfil `diretor` no banco Supabase.
 
-`profiles.perfil` é o enum `app_role`. O helper precisa receber `app_role[]` (não `text[]`) e as policies precisam passar o array com cast `::app_role[]`.
+## Passos
+1. Localizar o `id` em `auth.users` pelo email `m.sedeque59@gmail.com`.
+2. Executar `UPDATE public.profiles SET perfil = 'diretor', ativo = true WHERE id = <user_id>`.
+3. Confirmar com `SELECT id, email, perfil, ativo FROM public.profiles WHERE email = 'm.sedeque59@gmail.com'`.
+4. Registrar a alteração na tabela `logs` (ação: "Perfil alterado", detalhe: "m.sedeque59@gmail.com → diretor").
 
-Vou regravar `/mnt/documents/migration_presencas_rls.sql` com:
+## Execução
+Via Supabase Management API usando o access token já fornecido (projeto `cllltdybhvqfpzaddtuc`). Nenhuma alteração de código da aplicação é necessária — apenas dados.
 
-```sql
-create or replace function public.tem_perfil(_user uuid, _perfis app_role[])
-returns boolean
-language sql stable security definer set search_path = public
-as $$
-  select exists (
-    select 1 from public.profiles
-    where id = _user
-      and coalesce(ativo, true) = true
-      and perfil = any(_perfis)
-  )
-$$;
-
-alter table public.presencas enable row level security;
-
-drop policy if exists "presencas_select" on public.presencas;
-create policy "presencas_select" on public.presencas
-  for select to authenticated
-  using (public.tem_perfil(auth.uid(),
-    array['diretor','administrativo','recepcao','terapeuta']::app_role[]));
-
-drop policy if exists "presencas_insert" on public.presencas;
-create policy "presencas_insert" on public.presencas
-  for insert to authenticated
-  with check (public.tem_perfil(auth.uid(),
-    array['diretor','administrativo','recepcao']::app_role[]));
-
-drop policy if exists "presencas_update" on public.presencas;
-create policy "presencas_update" on public.presencas
-  for update to authenticated
-  using (public.tem_perfil(auth.uid(),
-    array['diretor','administrativo','recepcao']::app_role[]))
-  with check (public.tem_perfil(auth.uid(),
-    array['diretor','administrativo','recepcao']::app_role[]));
-
-grant select, insert, update on public.presencas to authenticated;
-grant all on public.presencas to service_role;
-```
-
-Sem outras alterações.
+## Validação
+Após o update, o usuário ao fazer login será redirecionado para a home de `diretor` e verá o menu completo (Usuários, Logs, etc.).
