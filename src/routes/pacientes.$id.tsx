@@ -73,8 +73,13 @@ function PacienteForm() {
   }
 
   async function handleSave() {
-    await savePaciente(p);
-    navigate({ to: "/pacientes" });
+    try {
+      await savePaciente(p);
+      navigate({ to: "/pacientes" });
+    } catch (err: any) {
+      console.error("Save error:", err);
+      alert("Erro ao salvar: " + (err.message || JSON.stringify(err)));
+    }
   }
 
   async function handleDelete() {

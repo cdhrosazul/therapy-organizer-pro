@@ -58,8 +58,13 @@ function FuncForm() {
   }, [id, isNew]);
 
   async function handleSave() {
-    await saveFuncionario(f);
-    navigate({ to: "/funcionarios" });
+    try {
+      await saveFuncionario(f);
+      navigate({ to: "/funcionarios" });
+    } catch (err: any) {
+      console.error("Save error:", err);
+      alert("Erro ao salvar: " + (err.message || JSON.stringify(err)));
+    }
   }
 
   async function handleDelete() {

@@ -53,8 +53,8 @@ interface DbFuncionario {
   especialidade: string | null;
   salario: number | null;
   escala: string | null;
-  horario_entrada: string | null;
-  horario_saida: string | null;
+  horario_inicio: string | null;
+  horario_fim: string | null;
   status: "ativo" | "inativo" | "ferias";
   documentos: DocumentoArquivo[] | null;
 }
@@ -71,9 +71,9 @@ const funcFromDb = (d: DbFuncionario): Funcionario => ({
   especialidade: (d.especialidade ?? undefined) as Especialidade | undefined,
   salario: d.salario ?? 0,
   escala: d.escala ?? "",
-  horarioEntrada: d.horario_entrada ?? "",
-  horarioSaida: d.horario_saida ?? "",
-  status: d.status,
+  horarioEntrada: d.horario_inicio ?? "",
+  horarioSaida: d.horario_fim ?? "",
+  status: (d.status === "Ativo" ? "ativo" : d.status === "Férias" ? "ferias" : "inativo") as any,
   documentos: d.documentos ?? [],
 });
 
@@ -89,10 +89,9 @@ const funcToDb = (f: Funcionario) => ({
   especialidade: f.especialidade ?? null,
   salario: f.salario ?? 0,
   escala: f.escala || null,
-  horario_entrada: f.horarioEntrada || null,
-  horario_saida: f.horarioSaida || null,
-  status: f.status,
-  documentos: f.documentos ?? [],
+  horario_inicio: f.horarioEntrada || null,
+  horario_fim: f.horarioSaida || null,
+  status: (f.status === "ativo" ? "Ativo" : f.status === "ferias" ? "Férias" : "Inativo") as any,
 });
 
 interface DbPaciente {
@@ -126,9 +125,6 @@ const pacToDb = (p: Paciente) => ({
   endereco: p.endereco || null,
   telefone: p.telefone || null,
   convenio: p.convenio || null,
-  terapias: p.terapias ?? [],
-  responsavel: p.responsavel || null,
-  documentos: p.documentos ?? [],
 });
 
 interface DbAtendimento {

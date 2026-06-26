@@ -10,4 +10,4 @@ export const especialidades: Especialidade[] = [
   "Musicoterapia",
 ];
 
-export const convenios = ["Particular", "Unimed", "Bradesco Saúde", "Amil", "SulAmérica", "Hapvida"];
+export const convenios = ["Particular", "Aeronautica", "Exército", "Petrobras", "Marinha", "Pmerj", "Cassi"];
